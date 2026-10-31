@@ -63,7 +63,11 @@ Van achter naar voor: **Ruim 3 – U-tank – Ruim 2 – Ruim 1**. Alle schepen 
 
 ## Scheepsprofiel
 
-Alles wat per schip kan verschillen staat in **één blok bovenin `ballast_simulator.html`** (`const PROFIEL = { … }`). Openen in Kladblok, invullen, opslaan. Simulator én afdrukbladen gebruiken het.
+Alles wat per schip kan verschillen staat in **één blok bovenin `ballast_simulator.html`** (`const PROFIEL = { … }`). Simulator én afdrukbladen gebruiken het.
+
+**Invullen (aanbevolen):** in de simulator onder *Scheepsgegevens* op **Gegevens invullen…** klikken. Vul de vakjes in (komma of punt mag allebei; leeg = nog niet bekend) en klik op **Opslaan als nieuw bestand**. De browser downloadt een nieuwe `ballast_simulator_<schip>.html` met de gegevens erin (meestal in de map Downloads). Vervang het oude bestand door dit nieuwe. Onmogelijke waarden (geen getal, alarm of doelpeil boven het max. niveau) worden rood gemarkeerd en niet opgeslagen.
+
+**Of met de hand:** het bestand openen in Kladblok en het blok aanpassen. Let op: één vergeten komma of aanhalingsteken en de simulator opent niet meer.
 
 - **peil:** hoogwateralarm, maximaal niveau en doelpeil per ruim en U-tank (meter).
 - **diepgang:** regels met omschrijving, diepgang en Sygo-stand.
@@ -125,3 +129,5 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
   - bladen (Ballast in, Ontballasten, Ruststand, Controleblad) rechtstreeks uit de simulator, met O/D bij elke afsluiter;
   - fouten hersteld: stap "Klaar" sprak de doelstand tegen, Deelafsluiter 1-2 ontbrak bij ontballasten, debiet werd per leiding in plaats van per ruim verdeeld;
   - "Over dit project".
+  - invulscherm "Gegevens invullen…" dat een nieuw simulatorbestand met de gegevens maakt;
+  - dikkere stromingslijnen.

@@ -48,6 +48,15 @@
   table.data td, table.data th { padding:3px 4px; border-bottom:1px solid #e3e5e8; text-align:left; vertical-align:top; }
   table.data th { color:#555; font-weight:600; }
   .leeg { color:#b06000; }
+  #dlgGegevens { max-width:920px; width:calc(100% - 32px); }
+  #dlgGegevens h4 { margin:16px 0 6px; font-size:15px; }
+  #dlgGegevens input[type=text] { font:inherit; font-size:14px; padding:5px 6px; border-radius:5px; border:1px solid #b9bec5; width:100%; }
+  #dlgGegevens input.num { width:90px; }
+  #dlgGegevens input::placeholder { color:#aaa; font-style:italic; }
+  #dlgGegevens input.fout { border-color:var(--red); background:#fdecec; }
+  #dlgGegevens select { padding:4px; font-size:13px; }
+  #dlgGegevens .knoppen { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; position:sticky; bottom:-20px; background:#fff; padding:10px 0; }
+  #dlgGegevens .melding { font-size:14px; margin-top:8px; }
   a.over { font-size:13px; color:var(--blue); cursor:pointer; text-decoration:underline; }
   dialog { max-width:720px; border:1px solid #b9bec5; border-radius:10px; padding:20px 24px; font-size:15px; line-height:1.45; }
   dialog::backdrop { background:rgba(0,0,0,.35); }
@@ -211,7 +220,7 @@ const PROFIEL = {
 
     <h2>Scheepsgegevens</h2>
     <div id="shipData"></div>
-    <div class="note">Aan te passen in het scheepsprofiel bovenin dit bestand.</div>
+    <div class="btns" style="margin-top:8px"><button id="btnGegevens">Gegevens invullen…</button></div>
 
     <h2>Afdrukken (A3)</h2>
     <div class="btns" style="align-items:center">
@@ -231,6 +240,8 @@ const PROFIEL = {
 
 <div id="printdoc"></div>
 
+<dialog id="dlgGegevens"><div id="gegBody"></div></dialog>
+
 <dialog id="dlgOver">
   <div id="overBody"></div>
   <p style="text-align:right;margin:16px 0 0"><button onclick="this.closest('dialog').close()">Sluiten</button></p>
@@ -243,6 +254,8 @@ const PUMP_R = "__PUMPR__";
 
 <script>
 "use strict";
+// Kopie van dit bestand zoals het geladen is (vóór de tekening wordt opgebouwd), om bij "Gegevens invullen" een nieuw bestand te maken.
+const BRON_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
 const STANDAARDNAMEN = {
   bu_a:"Buitenboord achter", bu_v:"Buitenboord voor",
   pe_a:"Pers ejector achter", pb_a:"Pers ballast achter", pb_v:"Pers ballast voor", pe_v:"Pers ejector voor",
@@ -927,6 +940,111 @@ const mv = v => num(v)!==null ? fmt(v) + " m" : leeg;
   h += `<tr><td>Volumes</td><td colspan="2">${TK.map(t => TKNAAM[t].replace("Ruim ","R")+" "+(num(v[t])!==null ? v[t]+" m³" : "–")).join(" · ")}</td></tr></table>`;
   document.getElementById("shipData").innerHTML = (PROFIEL.schip ? `<p style="margin:0 0 6px;font-weight:600">${PROFIEL.schip}</p>` : "") + h;
 }
+/* ---------------- gegevens invullen ---------------- */
+// Een formulier voor het scheepsprofiel. "Opslaan" maakt een nieuw simulatorbestand met de gegevens erin.
+const STATUSSEN = ["gecontroleerd","besproken","nog controleren","nog invullen"];
+const esc = x => String(x ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const nv = x => num(x) !== null ? String(x).replace(".", ",") : "";
+const inp = (id, v, cls="num", ph="") => `<input type="text" inputmode="decimal" class="${cls}" id="${id}" value="${esc(v)}" placeholder="${esc(ph)}">`;
+function dgRow(r={}) { return `<tr><td>${inp("", r.omschrijving||"", "dg_o", "bv. leeg, WD-kanaal")}</td><td>${inp("", nv(r.diepgang), "num dg_d")}</td><td>${inp("", num(r.sygo)!==null ? String(r.sygo) : "", "num dg_s")}</td></tr>`; }
+function openGegevens() {
+  const pr = PROFIEL, c = pr.capaciteit || {}, vol = pr.volume || {};
+  let h = `<h3 style="margin-top:0">Gegevens invullen</h3>
+    <p class="note" style="font-size:14px">Leeg laten = nog niet bekend. Komma of punt mag allebei. Met <b>Opslaan</b> download je een nieuw simulatorbestand met deze gegevens erin.</p>
+    <div class="row"><span class="lab">Schip</span><input type="text" id="g_schip" value="${esc(pr.schip)}" placeholder="naam van het schip" style="width:280px"></div>
+    <h4>Peilen</h4><table class="data"><tr><th></th><th>Hoogwateralarm (m)</th><th>Max. niveau (m)</th><th>Doelpeil (m)</th><th>Volume bij max. (m³)</th></tr>`;
+  for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${inp("g_"+t+"_alarm", nv(P(t).alarm))}</td><td>${inp("g_"+t+"_max", nv(P(t).max))}</td><td>${inp("g_"+t+"_doel", nv(P(t).doel))}</td><td>${inp("g_"+t+"_vol", nv(vol[t]))}</td></tr>`;
+  h += `</table><h4>Diepgang en Sygo-stand</h4><table class="data"><thead><tr><th>Omschrijving</th><th>Diepgang (m)</th><th>Sygo-stand (mt)</th></tr></thead><tbody id="g_dg">${(pr.diepgang||[]).map(dgRow).join("") || dgRow()}</tbody></table>
+    <button type="button" id="g_dgAdd" style="margin-top:6px">Regel toevoegen</button>
+    <h4>Capaciteit (optioneel)</h4>
+    <div class="row"><span class="lab" style="min-width:150px">Ballastpomp (m³/h)</span>${inp("g_pomp", nv(c.pomp_m3h))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Ejector (m³/h)</span>${inp("g_ejector", nv(c.ejector_m3h))}</div>
+    <p class="note">Zijn capaciteiten én alle volumes ingevuld, dan rekent de simulator met echte tijden en m³.</p>
+    <h4>Afsluiternamen</h4><p class="note" style="margin-top:0">Alleen invullen als de afsluiter aan boord anders heet.</p>
+    <table class="data"><tr><th>Nr</th><th>Standaardnaam</th><th>Naam aan boord</th></tr>`;
+  for (const v of Object.values(VALVES)) h += `<tr><td>${v.nr}</td><td>${esc(STANDAARDNAMEN[v.id])}</td><td><input type="text" class="g_naam" data-id="${v.id}" value="${esc((pr.namen||{})[v.id]||"")}" placeholder="zelfde als standaard"></td></tr>`;
+  h += `</table><h4>Controlestatus</h4><table class="data"><tr><th>Onderdeel</th><th>Status</th><th>Wanneer</th><th>Opmerking</th></tr>`;
+  (pr.controle||[]).forEach((k,i) => h += `<tr><td>${esc(k.onderdeel)}</td><td><select class="g_st" data-i="${i}">${STATUSSEN.map(s => `<option${s===k.status?" selected":""}>${s}</option>`).join("")}</select></td><td><input type="text" class="g_wn" data-i="${i}" value="${esc(k.wanneer)}" style="width:100px"></td><td><input type="text" class="g_opm" data-i="${i}" value="${esc(k.opm)}"></td></tr>`);
+  h += `</table><div class="melding" id="g_msg"></div>
+    <div class="knoppen"><button type="button" onclick="this.closest('dialog').close()">Annuleren</button><button type="button" class="on" id="g_save">Opslaan als nieuw bestand</button></div>`;
+  document.getElementById("gegBody").innerHTML = h;
+  document.getElementById("g_dgAdd").onclick = () => document.getElementById("g_dg").insertAdjacentHTML("beforeend", dgRow());
+  document.getElementById("g_save").onclick = saveGegevens;
+  document.getElementById("dlgGegevens").showModal();
+}
+function collectGegevens() {
+  const fouten = [];
+  const rd = (e, wat) => {
+    const s = e.value.trim().replace(",", ".");
+    e.classList.remove("fout");
+    if (!s) return null;
+    const v = Number(s);
+    if (!isFinite(v) || v < 0) { e.classList.add("fout"); fouten.push(`${wat}: "${e.value}" is geen getal`); return null; }
+    return v;
+  };
+  const $ = id => document.getElementById(id);
+  const p = JSON.parse(JSON.stringify(PROFIEL));
+  p.schip = $("g_schip").value.trim();
+  p.peil = {}; p.volume = {};
+  for (const t of TK) {
+    const r = { alarm: rd($("g_"+t+"_alarm"), TKNAAM[t]+" alarm"), max: rd($("g_"+t+"_max"), TKNAAM[t]+" max."), doel: rd($("g_"+t+"_doel"), TKNAAM[t]+" doelpeil") };
+    if (r.max !== null && r.alarm !== null && r.alarm > r.max) { $("g_"+t+"_alarm").classList.add("fout"); fouten.push(`${TKNAAM[t]}: alarm ligt boven het max. niveau`); }
+    if (r.max !== null && r.doel !== null && r.doel > r.max) { $("g_"+t+"_doel").classList.add("fout"); fouten.push(`${TKNAAM[t]}: doelpeil ligt boven het max. niveau`); }
+    p.peil[t] = r; p.volume[t] = rd($("g_"+t+"_vol"), TKNAAM[t]+" volume");
+  }
+  p.diepgang = [...$("g_dg").rows].map(tr => ({
+    omschrijving: tr.querySelector(".dg_o").value.trim(),
+    diepgang: rd(tr.querySelector(".dg_d"), "diepgang"),
+    sygo: rd(tr.querySelector(".dg_s"), "Sygo-stand"),
+  })).filter(r => r.omschrijving || r.diepgang !== null || r.sygo !== null);
+  if (!p.diepgang.length) p.diepgang = [{ omschrijving: "", diepgang: null, sygo: null }];
+  p.capaciteit = { pomp_m3h: rd($("g_pomp"), "pompcapaciteit"), ejector_m3h: rd($("g_ejector"), "ejectorcapaciteit") };
+  p.namen = {};
+  document.querySelectorAll("#gegBody .g_naam").forEach(e => { const v = e.value.trim(); if (v && v !== STANDAARDNAMEN[e.dataset.id]) p.namen[e.dataset.id] = v; });
+  document.querySelectorAll("#gegBody .g_st").forEach(e => p.controle[+e.dataset.i].status = e.value);
+  document.querySelectorAll("#gegBody .g_wn").forEach(e => p.controle[+e.dataset.i].wanneer = e.value.trim());
+  document.querySelectorAll("#gegBody .g_opm").forEach(e => p.controle[+e.dataset.i].opm = e.value.trim());
+  return { p, fouten };
+}
+function profielJs(p) {
+  // Schrijft het profiel terug in dezelfde, leesbare vorm als bovenin dit bestand.
+  const js = x => x === null || x === undefined ? "null" : (typeof x === "number" ? String(x) : JSON.stringify(x).replace(/</g, "\\u003c"));
+  const pad = (s, n) => s + " ".repeat(Math.max(1, n - s.length));
+  const L = [];
+  L.push("const PROFIEL = {");
+  L.push(`  ${pad("schip: " + js(p.schip) + ",", 33)}// naam van het schip, bv. "MTS Voorbeeld"`);
+  L.push(`  versie: ${js(p.versie)},`, "");
+  L.push("  // Peilen in meter. alarm = hoogwateralarm, max = maximaal niveau, doel = standaard doelpeil bij ballast in.", "  peil: {");
+  for (const t of ["T3","T2","T1","UT"]) L.push(`    ${pad(`${t}: { alarm: ${js(p.peil[t].alarm)}, max: ${js(p.peil[t].max)}, doel: ${js(p.peil[t].doel)} },`, 50)}// ${t==="UT" ? "U-tank (ballastruimte rond de methanoltank)" : TKNAAM[t]}`);
+  L.push("  },", "", "  // Diepgang en Sygo-stand (uit het tabellenboek). Voeg zo veel regels toe als nodig.", "  diepgang: [");
+  for (const r of p.diepgang) L.push(`    { omschrijving: ${js(r.omschrijving)}, diepgang: ${js(r.diepgang)}, sygo: ${js(r.sygo)} },`);
+  L.push("  ],", "", "  // Optioneel: met deze gegevens rekent de simulator met echte tijden en m³.");
+  L.push(`  capaciteit: { pomp_m3h: ${js(p.capaciteit.pomp_m3h)}, ejector_m3h: ${js(p.capaciteit.ejector_m3h)} },`);
+  L.push(`  volume: { T3: ${js(p.volume.T3)}, T2: ${js(p.volume.T2)}, T1: ${js(p.volume.T1)}, UT: ${js(p.volume.UT)} },   // m³ bij maximaal niveau`, "");
+  L.push("  // Afwijkende afsluiternamen (sleutel = code uit de lijst STANDAARDNAMEN hieronder).", "  namen: {");
+  for (const k in p.namen) L.push(`    ${k}: ${js(p.namen[k])},`);
+  L.push("  },", "", "  // Controlestatus per onderdeel; komt terug onder \"Over dit project\".", "  // status: \"gecontroleerd\", \"besproken\", \"nog controleren\" of \"nog invullen\".", "  controle: [");
+  for (const k of p.controle) L.push(`    { onderdeel: ${js(k.onderdeel)}, status: ${js(k.status)}, wanneer: ${js(k.wanneer)}, opm: ${js(k.opm)} },`);
+  L.push("  ],", "};");
+  return "\n" + L.join("\n") + "\n";
+}
+function bouwHtml(p) {
+  const open = '<script id="profiel">', i = BRON_HTML.indexOf(open), j = BRON_HTML.indexOf("</" + "script>", i);
+  return BRON_HTML.slice(0, i + open.length) + profielJs(p) + BRON_HTML.slice(j);
+}
+function saveGegevens() {
+  const { p, fouten } = collectGegevens(), msg = document.getElementById("g_msg");
+  if (fouten.length) { msg.innerHTML = `<span style="color:var(--red)">Niet opgeslagen: ${fouten.map(esc).join("; ")}.</span>`; return; }
+  const naamBestand = "ballast_simulator" + (p.schip ? "_" + p.schip.replace(/[^\w-]+/g, "_") : "") + ".html";
+  const url = URL.createObjectURL(new Blob([bouwHtml(p)], { type: "text/html" }));
+  const a = document.createElement("a"); a.href = url; a.download = naamBestand;
+  document.body.appendChild(a); a.click(); a.remove();
+  msg.innerHTML = `<b>Opgeslagen als ${esc(naamBestand)}</b> (meestal in de map Downloads).<br>
+    Vervang het oude simulatorbestand door dit nieuwe en open het: dan zijn simulator en afdrukbladen bijgewerkt.
+    Dit scherm blijft nog de oude gegevens tonen.`;
+}
+document.getElementById("btnGegevens").onclick = openGegevens;
+
 document.getElementById("lnkOver").onclick = () => {
   const rows = (PROFIEL.controle||[]).map(c => `<tr><td>${c.onderdeel}</td><td style="color:${c.status==="gecontroleerd"?"#1d7a2c":c.status==="besproken"?"#2e3192":"#b06000"}">${c.status}${c.wanneer ? " ("+c.wanneer+")" : ""}</td><td>${c.opm||""}</td></tr>`).join("");
   document.getElementById("overBody").innerHTML = `
