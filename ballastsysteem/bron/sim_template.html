@@ -141,10 +141,10 @@ const PROFIEL = {
 <div id="app">
   <div id="stage"><svg id="svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1414" preserveAspectRatio="xMidYMid meet"><style>
     .pipe { fill:none; stroke:#231f20; stroke-linejoin:miter; }
-    .flow { fill:none; stroke:#2e3192; stroke-width:5; stroke-dasharray:16 10; animation: dash .55s linear infinite; }
+    .flow { fill:none; stroke:#2e3192; stroke-width:9; stroke-linecap:butt; stroke-dasharray:22 12; animation: dash .6s linear infinite; }
     .flow.rev { animation-direction: reverse; }
     .flow.paused { animation-play-state: paused; }
-    @keyframes dash { to { stroke-dashoffset:-26; } }
+    @keyframes dash { to { stroke-dashoffset:-34; } }
     .valve { cursor:pointer; }
     .valve .hit { fill:transparent; }
     .valve:hover .hit { fill:rgba(46,49,146,.12); }
@@ -553,7 +553,7 @@ const GAUGE = {};
   const mini = (g,x,y,f) => { poly(g,[[x-13,y-10],[x-13,y+10],[x,y]],f,BLK,2); poly(g,[[x+13,y-10],[x+13,y+10],[x,y]],f,BLK,2); };
   row(0,(g,x,y)=>mini(g,x,y,GRN),"Afsluiter open (O)");
   row(1,(g,x,y)=>mini(g,x,y,RED),"Afsluiter dicht (D)");
-  row(2,(g,x,y)=>{ line(g,[[x-24,y],[x+24,y]],5,BLUE,{"stroke-dasharray":"16 10"}); },"Water stroomt","screen-only");
+  row(2,(g,x,y)=>{ line(g,[[x-24,y],[x+24,y]],9,BLUE,{"stroke-dasharray":"22 12"}); },"Water stroomt","screen-only");
   row(3,(g,x,y)=>{ el(g,"circle",{cx:x,cy:y,r:13,fill:"none",stroke:"#ff8c00","stroke-width":4}); },"Moet nog veranderen","screen-only");
   row(2,(g,x,y)=>{ bell(x+10,y,180,0.6); },"Zuigmond in ruim","print-only");
   row(3,(g,x,y)=>{ checkValve(x,y+12,true); },"Terugslagklep","print-only");
