@@ -57,7 +57,6 @@
   #dlgGegevens select { padding:4px; font-size:13px; }
   #dlgGegevens .knoppen { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; position:sticky; bottom:-20px; background:#fff; padding:10px 0; }
   #dlgGegevens .melding { font-size:14px; margin-top:8px; }
-  a.over { font-size:13px; color:var(--blue); cursor:pointer; text-decoration:underline; }
   dialog { max-width:720px; border:1px solid #b9bec5; border-radius:10px; padding:20px 24px; font-size:15px; line-height:1.45; }
   dialog::backdrop { background:rgba(0,0,0,.35); }
   dialog h3 { margin:16px 0 6px; font-size:16px; }
@@ -132,7 +131,7 @@ const PROFIEL = {
   namen: {
   },
 
-  // Controlestatus per onderdeel; komt terug onder "Over dit project".
+  // Controlestatus per onderdeel (eigen administratie).
   // status: "gecontroleerd", "besproken", "nog controleren" of "nog invullen".
   controle: [
     { onderdeel: "Opbouw leidingschema S-serie",       status: "besproken",       wanneer: "30-10-2026", opm: "3 ruimen + U-tank, 2 pompen, 2 ejectors, DN50-strips in elk ruim." },
@@ -234,18 +233,12 @@ const PROFIEL = {
     </div>
     <div class="note">De bladen gebruiken de keuze voor ruimen en pomp hierboven. Blad 2 bevat de standentabel en de invulvakken.</div>
 
-    <p style="margin-top:22px"><a class="over" id="lnkOver">Over dit project</a></p>
   </aside>
 </div>
 
 <div id="printdoc"></div>
 
 <dialog id="dlgGegevens"><div id="gegBody"></div></dialog>
-
-<dialog id="dlgOver">
-  <div id="overBody"></div>
-  <p style="text-align:right;margin:16px 0 0"><button onclick="this.closest('dialog').close()">Sluiten</button></p>
-</dialog>
 
 <script>
 const PUMP_L = "__PUMPL__";
@@ -1023,7 +1016,7 @@ function profielJs(p) {
   L.push(`  volume: { T3: ${js(p.volume.T3)}, T2: ${js(p.volume.T2)}, T1: ${js(p.volume.T1)}, UT: ${js(p.volume.UT)} },   // m³ bij maximaal niveau`, "");
   L.push("  // Afwijkende afsluiternamen (sleutel = code uit de lijst STANDAARDNAMEN hieronder).", "  namen: {");
   for (const k in p.namen) L.push(`    ${k}: ${js(p.namen[k])},`);
-  L.push("  },", "", "  // Controlestatus per onderdeel; komt terug onder \"Over dit project\".", "  // status: \"gecontroleerd\", \"besproken\", \"nog controleren\" of \"nog invullen\".", "  controle: [");
+  L.push("  },", "", "  // Controlestatus per onderdeel (eigen administratie).", "  // status: \"gecontroleerd\", \"besproken\", \"nog controleren\" of \"nog invullen\".", "  controle: [");
   for (const k of p.controle) L.push(`    { onderdeel: ${js(k.onderdeel)}, status: ${js(k.status)}, wanneer: ${js(k.wanneer)}, opm: ${js(k.opm)} },`);
   L.push("  ],", "};");
   return "\n" + L.join("\n") + "\n";
@@ -1045,20 +1038,6 @@ function saveGegevens() {
 }
 document.getElementById("btnGegevens").onclick = openGegevens;
 
-document.getElementById("lnkOver").onclick = () => {
-  const rows = (PROFIEL.controle||[]).map(c => `<tr><td>${c.onderdeel}</td><td style="color:${c.status==="gecontroleerd"?"#1d7a2c":c.status==="besproken"?"#2e3192":"#b06000"}">${c.status}${c.wanneer ? " ("+c.wanneer+")" : ""}</td><td>${c.opm||""}</td></tr>`).join("");
-  document.getElementById("overBody").innerHTML = `
-    <h3>Over dit project</h3>
-    <p>Leidingschema's en een oefensimulator voor het ballastsysteem van de S-serie: ballast in met de ballastpompen, ontballasten met de ejectors.
-    Gemaakt met <b>Claude</b> (AI van Anthropic), op basis van de originele Illustrator-tekeningen en de Word-schema's van het systeem.</p>
-    <p><b>Wat de AI deed:</b> de tekening opnieuw opbouwen, de simulator programmeren (leidingnet als netwerk van knopen en leidingen, stroming per pomp en ejector), de stappenplannen en de afdrukbladen.<br>
-    <b>Wat de vakman deed:</b> de kennis van het systeem aanleveren, keuzes maken en alles controleren en corrigeren.</p>
-    <p><b>Techniek:</b> één los HTML-bestand met SVG en JavaScript. Geen installatie, geen internet, geen server. Alles wat per schip verschilt staat in één scheepsprofiel bovenin het bestand.</p>
-    <h3>Controlestatus</h3>
-    <table class="data"><tr><th>Onderdeel</th><th>Status</th><th>Opmerking</th></tr>${rows}</table>
-    <p class="note">Versie ${PROFIEL.versie}. Aan boord geldt altijd de boordinstructie.</p>`;
-  document.getElementById("dlgOver").showModal();
-};
 
 /* ---------------- afdrukken ---------------- */
 let saved = null;

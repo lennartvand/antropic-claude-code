@@ -73,7 +73,7 @@ Alles wat per schip kan verschillen staat in **één blok bovenin `ballast_simul
 - **diepgang:** regels met omschrijving, diepgang en Sygo-stand.
 - **capaciteit / volume (optioneel):** pomp- en ejectorcapaciteit (m³/h) en volume per ruim (m³). Zijn alle ingevuld, dan rekent de simulator met echte tijden en toont hij m³.
 - **namen:** alleen afsluiters die aan boord anders heten dan de standaardnaam, bv. `ze1: "Zuig ejector voor"`.
-- **controle:** de controlestatus per onderdeel (zichtbaar onder "Over dit project").
+- **controle:** de controlestatus per onderdeel (eigen administratie).
 
 Een leeg veld (`null`) geeft in de simulator "–" (peilen in % van max.) en op de bladen een leeg invulvak. Er staan dus geen verkeerde getallen meer op die er geloofwaardig uitzien.
 
@@ -96,7 +96,6 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
   - pompwater loopt via de ejector overboord;
   - doelpeil bereikt, ruim leeg, hoogwateralarm en maximaal niveau.
 - **Afdrukken (A3):** Ballast in, Ontballasten, Ruststand of Controleblad, voor de gekozen ruimen en pomp.
-- **Over dit project:** hoe het gemaakt is en de controlestatus.
 
 ### Technisch
 
@@ -128,6 +127,5 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
   - stripleidingen als hulpmiddel voor restjes;
   - bladen (Ballast in, Ontballasten, Ruststand, Controleblad) rechtstreeks uit de simulator, met O/D bij elke afsluiter;
   - fouten hersteld: stap "Klaar" sprak de doelstand tegen, Deelafsluiter 1-2 ontbrak bij ontballasten, debiet werd per leiding in plaats van per ruim verdeeld;
-  - "Over dit project".
   - invulscherm "Gegevens invullen…" dat een nieuw simulatorbestand met de gegevens maakt;
   - dikkere stromingslijnen.
