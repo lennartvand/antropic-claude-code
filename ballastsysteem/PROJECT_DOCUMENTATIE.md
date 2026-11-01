@@ -2,7 +2,7 @@
 
 Leidingschema's en een interactieve oefensimulator voor het ballasten (met de ballastpompen) en ontballasten (met de ejectors) van de ruimen en de U-tank van de S-serie.
 
-**Status:** versie 2.1 (concept), 30-10-2026
+**Status:** versie 2.2 (concept), 01-11-2026
 **Doel:** (A) opleiding van nieuwe bemanning en (B) betrouwbare naslag aan boord. De simulator mag versimpelen, maar mag niets verkeerds aanleren.
 
 ---
@@ -12,10 +12,10 @@ Leidingschema's en een interactieve oefensimulator voor het ballasten (met de ba
 | Bestand | Wat |
 |---|---|
 | `ballast_simulator.html` | De simulator. Eén los bestand, werkt offline op een pc; openen in een browser. Bevat ook de afdrukbladen. |
-| `bladen/ballast_in_2.1.pdf` / `.svg` | A3-blad Ballast in (blad 1: schema, blad 2: standen, volgorde, routekeuze, invulvakken) |
-| `bladen/ontballasten_2.1.pdf` / `.svg` | A3-blad Ontballasten |
-| `bladen/ruststand_2.1.pdf` / `.svg` | A3-blad Ruststand |
-| `bladen/controleblad_2.1.pdf` / `.svg` | Controleblad: genummerde afsluiters om aan boord na te lopen + open vragen + invulvakken |
+| `bladen/ballast_in_2.2.pdf` / `.svg` | A3-blad Ballast in (blad 1: schema, blad 2: standen, volgorde, routekeuze, invulvakken, blad 3: ballastplan en tanktabellen) |
+| `bladen/ontballasten_2.2.pdf` / `.svg` | A3-blad Ontballasten (zelfde opbouw) |
+| `bladen/ruststand_2.2.pdf` / `.svg` | A3-blad Ruststand |
+| `bladen/controleblad_2.2.pdf` / `.svg` | Controleblad: genummerde afsluiters om aan boord na te lopen + open vragen + invulvakken |
 | `bron/sim_template.html` | Bron van de simulator (zonder pompplaatjes) |
 | `bron/build.py` | Bouwt `ballast_simulator.html` uit de template + `pumpL.b64` / `pumpR.b64` |
 | `bron/export.js` | Maakt de PDF/SVG-bladen uit de simulator |
@@ -69,13 +69,18 @@ Alles wat per schip kan verschillen staat in **één blok bovenin `ballast_simul
 
 **Of met de hand:** het bestand openen in Kladblok en het blok aanpassen. Let op: één vergeten komma of aanhalingsteken en de simulator opent niet meer.
 
-- **peil:** hoogwateralarm, maximaal niveau en doelpeil per ruim en U-tank (meter).
+- **peil:** hoogwateralarm, maximaal niveau en doelpeil per ruim en U-tank (cm).
+- **zaadhout_cm:** hoogte van het zaadhout (nu 140 cm, uit het hoofd). Grijze streep bij de meters en een melding als het peil erboven komt.
+- **voorlading_ton:** vaste hoeveelheid die bij elk tonnage wordt opgeteld (13,5 t, zoals in `ballast.xlsx`).
+- **utank_ton:** inhoud van de U-tank bij max. niveau (nog onbekend; de simulator rekent dan indicatief met 50 t).
+- **tanktabel:** per ruim de punten peil (cm) → ton. Tussenliggende waarden worden lineair geïnterpoleerd, zoals in de spreadsheet. Boven de hoogste tabelwaarde wordt de laatste helling doorgetrokken (onzeker, grijs op het blad).
+- **ballastplan:** per diepgang de peilen BB/SB per ruim, het totaal in ton en de gemeten inzinking en trim (buiten en binnen).
 - **diepgang:** regels met omschrijving, diepgang en Sygo-stand.
-- **capaciteit / volume (optioneel):** pomp- en ejectorcapaciteit (m³/h) en volume per ruim (m³). Zijn alle ingevuld, dan rekent de simulator met echte tijden en toont hij m³.
+- **capaciteit (optioneel):** pomp- en ejectorcapaciteit (m³/h). Zijn beide ingevuld, dan rekent de simulator met echte tijden (1 m³ ≈ 1 t).
 - **namen:** alleen afsluiters die aan boord anders heten dan de standaardnaam, bv. `ze1: "Zuig ejector voor"`.
 - **controle:** de controlestatus per onderdeel (eigen administratie).
 
-Een leeg veld (`null`) geeft in de simulator "–" (peilen in % van max.) en op de bladen een leeg invulvak. Er staan dus geen verkeerde getallen meer op die er geloofwaardig uitzien.
+Een leeg veld (`null`) geeft in de simulator "–" en op de bladen een leeg invulvak. Zolang het max. niveau niet is ingevuld, loopt de balk van de meters tot 300 cm. Er staan dus geen verkeerde getallen meer op die er geloofwaardig uitzien.
 
 Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build.py` en `node bron/export.js` voor nieuwe bladen. Of simpeler: in de simulator **Afdrukken (A3)** kiezen en in de browser als PDF opslaan.
 
@@ -84,7 +89,8 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 ## Simulator
 
 - **Situatie:** Ballast in (lege ruimen), Ontballasten (ruimen geballast) of Vrij oefenen.
-- **Taak:** kies de ruimen (ruim 3, U-tank, ruim 2, ruim 1) en de pomp (achter, voor, beide). Daaruit berekent de simulator de doelstand, inclusief de deelafsluiters. Bij Ballast in stel je per ruim een doelpeil in.
+- **Taak:** kies de ruimen (ruim 3, U-tank, ruim 2, ruim 1) en de pomp (achter, voor, beide). Daaruit berekent de simulator de doelstand, inclusief de deelafsluiters. Bij Ballast in kies je als doel een **diepgang uit het ballastplan** (de ruimen en doelpeilen worden dan overgenomen) of je stelt per ruim zelf een doelpeil in (cm, met de tonnen erbij).
+- **Peilen:** per ruim in cm en ton (via de tanktabel), met het totaal inclusief voorlading en de geschatte diepgang uit het ballastplan.
 - **Hulp:** stappenplan dat zichzelf afvinkt (voorbereidende stappen blijven "live" tot de pomp gestart is), oranje ringen rond wat nog anders moet, "Zet alles in doelstand" en "Ruststand".
 - **Stroming:** vanaf buitenboord door de draaiende pomp en open afsluiters naar tanks of ejector; vanaf de lopende ejector terug naar de ruimen met water. Blauwe streepjes in de stroomrichting.
 - **Meldingen:**
@@ -101,18 +107,23 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 
 - Het leidingnet is een graaf van knopen en leidingen (`EDGES`); elke leiding kan een afsluiter hebben. Zee, pompen, tanks, ejector-aansluitingen en overboord zijn eindpunten.
 - `solve()` zoekt in twee stappen (diepte-eerst): **persen** vanuit de pompen (alleen als buitenboord open is) naar tanks met ruimte en ejectors met Pers overboord open; daarna **zuigen** vanuit de actieve ejectors naar tanks met water. Debiet wordt per ruim verdeeld, niet per open leiding.
-- Peilen worden intern als fractie van het maximale niveau bijgehouden en via het profiel omgerekend naar meters.
+- Peilen worden intern per tank als fractie van de inhoud bij max. niveau bijgehouden en via de tanktabel omgerekend naar cm en ton. Pompen en ejectors verplaatsen ton per seconde.
+- De geschatte diepgang wordt lineair geïnterpoleerd tussen de totalen in het ballastplan (gemeten inzinking buiten).
 - Coördinaten in eenheden van 2000 × 1414 (A3-verhouding), gelijk aan de originele Illustrator-tekening.
 
 ---
 
 ## Open punten
 
-1. **Peilen, doelpeilen, diepgang en Sygo-stand** opzoeken in het tabellenboek en invullen in het profiel.
-2. **Controleblad** aan boord nalopen: plek en naam van elke afsluiter, DN-maten.
-3. **U-tank:** één vul/zuigleiding bevestigen; drainleiding aanwezig? waar? afsluiter?
-4. **Capaciteiten en volumes** (optioneel) voor echte tijden en m³.
-5. Bladen naast de oude Illustrator-bladen leggen: ontbreekt er iets dat in v1.0 / v1.0.8 wel stond?
+1. **Alarm, max. niveau en Sygo-stand** opzoeken in het tabellenboek en invullen.
+2. **Zaadhout:** 140 cm controleren, en wat het betekent voor het ballasten (lopen BB en SB erboven in elkaar over?).
+3. **Tanktabellen:** het aantal ton per cm neemt af naarmate het ruim voller is (ruim 1: 2,9 t/cm bij 70 cm, 1,0 t/cm boven 145 cm; ruim 2: 0,7 t/cm bij 245–250 cm). Bij een ruim met rechte wanden verwacht je ongeveer gelijke tonnen per cm. Controleren in het tabellenboek.
+4. **Ballastplan:** de binnen-meting bij 1,50 m is onvolledig (in de spreadsheet geeft dat inzinking 126,5 en trim −77) en bij 1,80 m ontbreekt hij; beide zijn leeg gelaten. Wat is de voorlading van 13,5 t precies?
+5. **U-tank:** inhoud (t) en eventueel een tanktabel.
+6. **Controleblad** aan boord nalopen: plek en naam van elke afsluiter, DN-maten.
+7. **U-tank:** één vul/zuigleiding bevestigen; drainleiding aanwezig? waar? afsluiter?
+8. **Capaciteiten** (optioneel) voor echte tijden.
+9. Bladen naast de oude Illustrator-bladen leggen: ontbreekt er iets dat in v1.0 / v1.0.8 wel stond?
 
 ## Historie
 
@@ -129,3 +140,11 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
   - fouten hersteld: stap "Klaar" sprak de doelstand tegen, Deelafsluiter 1-2 ontbrak bij ontballasten, debiet werd per leiding in plaats van per ruim verdeeld;
   - invulscherm "Gegevens invullen…" dat een nieuw simulatorbestand met de gegevens maakt;
   - dikkere stromingslijnen.
+- **v2.2** (01-11-2026):
+  - tanktabellen (cm → ton) en ballastplan per diepgang uit `ballast.xlsx`;
+  - peilen in cm en ton, totaal incl. voorlading en geschatte diepgang;
+  - Ballast in: doel kiezen als diepgang uit het ballastplan;
+  - zaadhout (140 cm) bij de meters;
+  - blad 3 bij Ballast in en Ontballasten: ballastplan en tanktabellen per 10 cm;
+  - invulscherm uitgebreid met tanktabellen en ballastplan (plakken uit Excel kan);
+  - "Over dit project" verwijderd.
