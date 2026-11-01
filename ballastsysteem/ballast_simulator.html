@@ -118,7 +118,7 @@ const PROFIEL = {
     T1: { alarm: null, max: null, doel: null },   // Ruim 1
     UT: { alarm: null, max: null, doel: null },   // U-tank (ballastruimte rond de methanoltank)
   },
-  zaadhout_cm: 140,                // hoogte zaadhout in de ruimen (uit het hoofd, nog controleren)
+  zaadhout_cm: 140,                // zaadhout: dicht schot tussen BB en SB, tot deze hoogte (uit het hoofd, nog controleren)
   meting_lading_ton: 13.5,         // lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")
   utank_ton: null,                 // inhoud U-tank in ton bij max. niveau
 
@@ -344,6 +344,30 @@ const plan = () => (PROFIEL.ballastplan || []).filter(r => num(r.ton) !== null).
 const metingLading = () => num(PROFIEL.meting_lading_ton) || 0;
 const planBallast = r => num(r.ton) !== null ? r.ton - metingLading() : null;
 let ladingNu = 0;
+// Per ruim de tonnen aan BB en SB. Onder het zaadhout zijn de kanten gescheiden; erboven lopen ze in elkaar over.
+const HOLDS = ["T3","T2","T1"];
+const kant = {T3:{B:0,S:0}, T2:{B:0,S:0}, T1:{B:0,S:0}};
+const zaadTon = t => { const z = num(PROFIEL.zaadhout_cm); return z && tabel(t) ? tonAt(t, z) / 2 : 0; };   // per kant
+function verdeel(t) {
+  const k = kant[t], H = zaadTon(t), cap = capTon(t);
+  let tot = Math.min(cap, k.B + k.S);
+  if (!H || tot >= 2*H) k.B = k.S = tot / 2;
+  else if (k.B > H) { k.B = H; k.S = tot - H; }
+  else if (k.S > H) { k.S = H; k.B = tot - H; }
+  else if (k.B + k.S > tot) { k.B = k.S = tot / 2; }
+  level[t] = (k.B + k.S) / cap;
+}
+function setLevel(t, f) { if (kant[t]) { kant[t].B = kant[t].S = f * capTon(t) / 2; verdeel(t); } else level[t] = f; }
+const kantFrac = (t, z) => kant[t] ? 2 * kant[t][z] / capTon(t) : level[t];       // als fractie van het hele ruim
+const minFrac = t => kant[t] ? Math.min(kantFrac(t,"B"), kantFrac(t,"S")) : level[t];
+const maxFrac = t => kant[t] ? Math.max(kantFrac(t,"B"), kantFrac(t,"S")) : level[t];
+function meterTxt(t) {
+  if (!kant[t]) return lvlTxt(t, level[t]);
+  const cb = cmOf(t, kantFrac(t,"B")), cs = cmOf(t, kantFrac(t,"S")), ton = tonKnown(t) ? " · " + Math.round(tonOf(t, level[t])) + " t" : "";
+  if (cb === null) return lvlTxt(t, level[t]);
+  return (Math.round(cb) === Math.round(cs) ? Math.round(cb) + " cm" : `BB ${Math.round(cb)} / SB ${Math.round(cs)} cm`) + ton;
+}
+const slagzijTon = () => HOLDS.reduce((s,t) => s + kant[t].B - kant[t].S, 0);       // + = BB zwaarder
 const ballastTon = () => TK.reduce((s,t) => s + (tonKnown(t) ? tonOf(t, level[t]) : 0), 0);
 function diepgangTxt(ton) {
   const a = plan().map(r => [r.ton, r.buiten && num(r.buiten[0]) !== null ? r.buiten[0] / 100 : r.diepgang]);
@@ -403,7 +427,8 @@ el("base","rect",{x:18,y:18,width:1962,height:1377,fill:"none",stroke:BLK,"strok
 const TANKS = {
   T3:{rect:[260,208,417,937]}, T2:{rect:[829,208,451,937]}, T1:{rect:[1280,208,410,937]}, UT:{rect:null},
 };
-for (const k of ["T3","T2","T1"]) { const r=TANKS[k].rect; TANKS[k].el = el("tanks","rect",{x:r[0],y:r[1],width:r[2],height:r[3],fill:"#4aa3df","fill-opacity":0}); }
+// ruimen in twee helften: boven = bakboord, onder = stuurboord (het zaadhout ligt op het midden)
+for (const k of ["T3","T2","T1"]) { const r=TANKS[k].rect, h=HDR-r[1]; TANKS[k].el = [el("tanks","rect",{x:r[0],y:r[1],width:r[2],height:h,fill:"#4aa3df","fill-opacity":0}), el("tanks","rect",{x:r[0],y:HDR,width:r[2],height:r[1]+r[3]-HDR,fill:"#4aa3df","fill-opacity":0})]; }
 TANKS.UT.el = [el("tanks","rect",{x:677,y:208,width:152,height:72,fill:"#4aa3df","fill-opacity":0}),
                el("tanks","rect",{x:677,y:1072,width:152,height:73,fill:"#4aa3df","fill-opacity":0})];
 el("base","rect",{x:260,y:208,width:1430,height:937,fill:"none",stroke:BLK,"stroke-width":2});
@@ -416,6 +441,7 @@ for (const [n,cx] of [[3,350],[2,1054],[1,1380]]) {
   text("base",cx,1167,`Ruim ${n} – stuurboord`,17,"middle");
 }
 text("base",753,1167,"U-tank",17,"middle");
+if (num(PROFIEL.zaadhout_cm)) text("base",990,704,`zaadhout: schot BB | SB tot ${PROFIEL.zaadhout_cm} cm`,11,"start",{fill:"#777"});
 
 // doorsnede U-tank (linkerkolom)
 {
@@ -585,13 +611,15 @@ const GAUGE = {};
     const y = yb+20+i*40, x0=150, w=320;
     text(g,60,y+20,TKNAAM[k],16);
     el(g,"rect",{x:x0,y,width:w,height:26,fill:"#fff",stroke:BLK,"stroke-width":1.5});
-    const bar = el(g,"rect",{x:x0,y,width:0,height:26,fill:"#4aa3df"});
+    const bar = el(g,"rect",{x:x0,y,width:0,height:13,fill:"#4aa3df"});          // BB
+    const barS = el(g,"rect",{x:x0,y:y+13,width:0,height:13,fill:"#4aa3df"});    // SB
+    if (k !== "UT") line(g,[[x0,y+13],[x0+w,y+13]],0.8,"#999");
     const af = alarmFrac(k), zf = zaadFrac(k);
     if (zf) line(g,[[x0+w*zf,y-4],[x0+w*zf,y+30]],2,"#777",{"stroke-dasharray":"4 3"});
     if (af) line(g,[[x0+w*af,y-4],[x0+w*af,y+30]],2.5,"#f0a020");
     const doel = line(g,[[x0,y-4],[x0,y+30]],3,"#1d7a2c",{style:"display:none"});
     const val = text(g,x0+w+12,y+20,"",16,"start",{weight:"bold"});
-    GAUGE[k] = {bar,val,doel,x0,w};
+    GAUGE[k] = {bar,barS,val,doel,x0,w};
   });
 }
 // peilgegevens (alleen op het blad)
@@ -699,6 +727,9 @@ function solve() {
   const msgs = [];
   const C = cap();
   const rate = {T1:0,T2:0,T3:0,UT:0};
+  const rt = {};                                         // ton per seconde per tank of kant ("T3:B", "T3:S", "UT")
+  const kantVan = e => /^(bb\d|st\db)$/.test(e.id) ? "B" : /^(sb\d|st\ds)$/.test(e.id) ? "S" : "";
+  const sleutel = (o, e) => kant[o] && kantVan(e) ? o + ":" + kantVan(e) : o;
   const ejActive = {3:false,1:false}, ejPass = {3:false,1:false};
   const poOf = {3:"po3",1:"po1"};
 
@@ -718,7 +749,7 @@ function solve() {
       for (const e of ADJ[node]||[]) {
         if (!isOpen(e.valve)) continue;
         const o = e.a===node ? e.b : e.a;
-        if (TERMINAL.has(o)) { const c = consumer(o); if (c) { setF(e,node); cons.push(c); any = true; } continue; }
+        if (TERMINAL.has(o)) { const c = consumer(o); if (c) { setF(e,node); cons.push(c[0]==="T" ? sleutel(c, e) : c); any = true; } continue; }
         if (seen.has(o)) continue; seen.add(o);
         if (dfs(o)) { setF(e,node); any = true; }
       }
@@ -730,7 +761,7 @@ function solve() {
     flows.set(pid==="PA" ? "zA" : "zV", 1);
     const share = C.qp / uniq.length;
     for (const c of uniq) {
-      if (c[0]==="T" || c==="UT") rate[c] += share / capTon(c);
+      if (c[0]==="T" || c==="UT") rt[c] = (rt[c] || 0) + share;
       if (c==="EJ3d") ejActive[3] = true;
       if (c==="EJ1d") ejActive[1] = true;
       if (c==="EJ3s") ejPass[3] = true;
@@ -757,7 +788,8 @@ function solve() {
           if (!isOpen(e.valve)) continue;
           const o = e.a===node ? e.b : e.a;
           if (TERMINAL.has(o)) {
-            if ((o[0]==="T" || o==="UT") && level[o] > 0.0005) { setF(e,o); sources.push(o); if (e.id.startsWith("st")) viaStrip.add(o); any = true; }
+            const key = (o[0]==="T" || o==="UT") ? sleutel(o, e) : null;
+            if (key && (kant[o] ? kant[o][kantVan(e)] > 0.05 : level[o] > 0.0005)) { setF(e,o); sources.push(key); if (e.id.startsWith("st")) viaStrip.add(key); any = true; }
             if ((o==="PA" || o==="PV") && PUMPS[o].on) short = true;
             continue;
           }
@@ -775,8 +807,8 @@ function solve() {
     else if (!sources.length) msgs.push(["info", `Ejector ${k} loopt, maar zuigt geen water (geen open ruim met water).`]);
     const uniq = [...new Set(sources)];
     if (!short) for (const t of uniq) {
-      const boost = viaStrip.has(t) && level[t] < STRIP_FRAC ? 1.3 : 1;
-      rate[t] -= C.qe / uniq.length / capTon(t) * boost;
+      const [tk, z] = t.split(":"), boost = viaStrip.has(t) && (z ? kantFrac(tk, z) : level[tk]) < STRIP_FRAC ? 1.3 : 1;
+      rt[t] = (rt[t] || 0) - C.qe / uniq.length * boost;
     }
     flows.set(k===3 ? "dis3" : "dis1", 1);
   }
@@ -785,6 +817,8 @@ function solve() {
     msgs.push(["warn", `Pompwater loopt via ${naam(k===3?"ze3":"ze1")} rechtstreeks overboord.`]);
   }
 
+  for (const k in rt) { const t = k.split(":")[0]; rate[t] += rt[k] / capTon(t); }
+
   // 3) procedure-meldingen
   for (const bu of ["bu_a","bu_v"]) if (!V(bu)) msgs.push(["warn", `${naam(bu)} is dicht: het brandbluswater staat niet meer stand-by. Buitenboord hoort altijd open.`]);
   const T = target();
@@ -792,10 +826,15 @@ function solve() {
     const mis = Object.keys(T).filter(id => VALVES[id] && stateOf(id) !== T[id]);
     if (mis.length && !stepDone("start")) msgs.push(["warn", `Pomp gestart terwijl nog niet alles klaarstaat: ${mis.slice(0,4).map(naam).join(", ")}${mis.length>4?" …":""}. Eerst alles klaarzetten, dan pas starten.`]);
   }
-  if (scenario==="in") for (const t of taskTanks()) if (level[t] >= doel[t] - 1e-3 && pumpOn()) msgs.push(["warn", `${TKNAAM[t]}: doelpeil bereikt (${lvlTxt(t, doel[t])}). Stop de pomp.`]);
-  if (scenario==="uit") for (const t of taskTanks()) if (level[t] <= 0.0005 && (PUMPS.PA.on || PUMPS.PV.on)) msgs.push(["info", `${TKNAAM[t]} is leeg.`]);
-  for (const t of ["T3","T2","T1"]) { const zf = zaadFrac(t); if (zf && level[t] > zf && rate[t] > 0) msgs.push(["info", `${TKNAAM[t]}: peil boven het zaadhout (${PROFIEL.zaadhout_cm} cm).`]); }
-  return {flows, rate, msgs, ejActive};
+  if (scenario==="in") for (const t of taskTanks()) if (minFrac(t) >= doel[t] - 1e-3 && pumpOn()) msgs.push(["warn", `${TKNAAM[t]}: doelpeil bereikt (${lvlTxt(t, doel[t])}). Stop de pomp.`]);
+  if (scenario==="uit") for (const t of taskTanks()) if (maxFrac(t) <= 0.0005 && (PUMPS.PA.on || PUMPS.PV.on)) msgs.push(["info", `${TKNAAM[t]} is leeg.`]);
+  for (const t of HOLDS) { const zf = zaadFrac(t); if (zf && level[t] > zf && rate[t] > 0) msgs.push(["info", `${TKNAAM[t]}: boven het zaadhout (${PROFIEL.zaadhout_cm} cm): BB en SB lopen nu in elkaar over.`]); }
+  const sz = slagzijTon();
+  if (Math.abs(sz) >= 15) {
+    const per = HOLDS.filter(t => Math.abs(kant[t].B - kant[t].S) >= 5).map(t => `${TKNAAM[t].toLowerCase()} ${Math.round(Math.abs(kant[t].B - kant[t].S))} t`).join(", ");
+    msgs.push(["warn", `Slagzij: ${sz > 0 ? "BB" : "SB"} is ${Math.round(Math.abs(sz))} t zwaarder dan ${sz > 0 ? "SB" : "BB"} (${per}). Het schip helt over naar ${sz > 0 ? "bakboord" : "stuurboord"}.`]);
+  }
+  return {flows, rate, rt, msgs, ejActive};
 }
 
 /* ---------------- stappenplannen ---------------- */
@@ -822,8 +861,8 @@ function buildSteps() {
     {t:`Zet de deelafsluiters: ${dtxt}.`, c:() => matches(["d23","d12"])},
     {t:`Open ${lijst(ps.map(p => naam(SIDE[p].pb)))}.`, c:() => matches(["pb_a","pb_v"])},
     {t:`Alles staat klaar: start de ${pomp}.`, c:() => allValves() && pumpsOk(), start:true},
-    {t:`Bewaak de peilen tot het doelpeil (${ts.map(t => TKNAAM[t]+" "+lvlTxt(t,doel[t])).join(", ")}).${planTxt()} Het hoogwateralarm is het vangnet.`, c:() => ts.length && ts.every(t => level[t] >= doel[t] - 1e-3)},
-    {t:"Doelpeil bereikt: stop de pomp en zet alles terug in de ruststand." + (pr0() ? ` Controleer de diepgang op de merken (verwacht ${fmt(pr0().buiten ? pr0().buiten[0]/100 : pr0().diepgang)} m).` : ""), c:() => !pumpOn() && isRust() && ts.every(t => level[t] >= doel[t] - 1e-3)},
+    {t:`Bewaak de peilen tot het doelpeil (${ts.map(t => TKNAAM[t]+" "+lvlTxt(t,doel[t])).join(", ")}).${planTxt()} Het hoogwateralarm is het vangnet.`, c:() => ts.length && ts.every(t => minFrac(t) >= doel[t] - 1e-3)},
+    {t:"Doelpeil bereikt: stop de pomp en zet alles terug in de ruststand." + (pr0() ? ` Controleer de diepgang op de merken (verwacht ${fmt(pr0().buiten ? pr0().buiten[0]/100 : pr0().diepgang)} m).` : ""), c:() => !pumpOn() && isRust() && ts.every(t => minFrac(t) >= doel[t] - 1e-3)},
   ];
   if (scenario === "uit") return [
     {t:`Controleer: ${lijst(["bu_a","bu_v"].map(naam))} open, Pers ballast achter en voor dicht.`, c:() => matches(["bu_a","bu_v","pb_a","pb_v"])},
@@ -832,8 +871,8 @@ function buildSteps() {
     {t:`Open ${lijst(ps.map(p => naam(SIDE[p].ze)))}.`, c:() => matches(["ze3","ze1"])},
     {t:tankTxt + ` Deelafsluiters: ${dtxt}.`, c:() => matches([...balIds,"d23","d12"])},
     {t:`Alles staat klaar: start de ${pomp}. De ejector gaat zuigen.`, c:() => allValves() && pumpsOk() && ps.every(p => lastSolve.ejActive[SIDE[p].ej]), start:true},
-    {t:"Laat de ruimen leegzuigen. Restje? Eventueel de DN50-strip van dat ruim openen.", c:() => ts.length && ts.every(t => level[t] <= 0.0005)},
-    {t:"Leeg: stop de pomp en zet alles terug in de ruststand.", c:() => !pumpOn() && isRust() && ts.every(t => level[t] <= 0.0005)},
+    {t:"Laat de ruimen leegzuigen. Restje? Eventueel de DN50-strip van dat ruim openen.", c:() => ts.length && ts.every(t => maxFrac(t) <= 0.0005)},
+    {t:"Leeg: stop de pomp en zet alles terug in de ruststand.", c:() => !pumpOn() && isRust() && ts.every(t => maxFrac(t) <= 0.0005)},
   ];
   return [];
 }
@@ -932,15 +971,15 @@ function render() {
   const C = cap(), alarms = [];
   for (const t of TK) {
     const L = level[t], g = GAUGE[t], af = alarmFrac(t);
-    g.bar.setAttribute("width", g.w * L);
-    const col = L >= 1 - 1e-3 ? RED : (af && L >= af ? "#f0a020" : "#4aa3df");
-    g.bar.setAttribute("fill", col);
-    g.val.textContent = lvlTxt(t, L);
+    const fB = kantFrac(t,"B"), fS = kantFrac(t,"S");
+    const kleur = f => f >= 1 - 1e-3 ? RED : (af && f >= af ? "#f0a020" : "#4aa3df"), col = kleur(L);
+    g.bar.setAttribute("width", g.w * fB); g.bar.setAttribute("fill", kleur(fB));
+    g.barS.setAttribute("width", g.w * fS); g.barS.setAttribute("fill", kleur(fS));
+    g.val.textContent = meterTxt(t);
     const showDoel = scenario === "in" && task.tanks.has(t);
     g.doel.style.display = showDoel ? "" : "none";
     if (showDoel) g.doel.setAttribute("points", PT([[g.x0+g.w*doel[t], 1230+TK.indexOf(t)*40-4],[g.x0+g.w*doel[t], 1230+TK.indexOf(t)*40+30]]));
-    const op = 0.06 + 0.45 * L;
-    (Array.isArray(TANKS[t].el) ? TANKS[t].el : [TANKS[t].el]).forEach(r => { r.setAttribute("fill-opacity", !pr && L > 0.002 ? op : 0); r.setAttribute("fill", col); });
+    TANKS[t].el.forEach((r, i) => { const f = kant[t] ? (i ? fS : fB) : L; r.setAttribute("fill-opacity", !pr && f > 0.002 ? 0.06 + 0.45 * f : 0); r.setAttribute("fill", kleur(f)); });
     if (L >= 1 - 1e-3 && s.rate[t] >= 0 && pumpOn()) alarms.push(["alarm", `${TKNAAM[t]}: ${num(P(t).max)!==null ? "MAXIMAAL NIVEAU bereikt ("+P(t).max+" cm)" : "einde van de balk (max. niveau nog niet ingevuld)"}. Stop met ballasten!`]);
     else if (af && L >= af) alarms.push(["alarm", `${TKNAAM[t]}: hoogwateralarm (≥ ${P(t).alarm} cm).`]);
   }
@@ -953,7 +992,8 @@ function render() {
   }
   const bal = ballastTon(), dg = diepgangTxt(bal + ladingNu);
   window.GAUGE_NOTE.textContent = `ballast ≈ ${Math.round(bal)} t` + (dg ? " · " + dg : "") + (ladingNu ? ` (met ${Math.round(ladingNu)} t lading)` : "");
-  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (dg ? ` · ${dg}` : "");
+  const sz = slagzijTon();
+  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (dg ? ` · ${dg}` : "") + (Math.abs(sz) >= 1 ? ` · ${sz > 0 ? "BB" : "SB"} ${Math.round(Math.abs(sz))} t zwaarder` : "");
   updateSteps();
 }
 
@@ -963,7 +1003,11 @@ function tick(t) {
   const dt = Math.min(0.1, (t - tPrev) / 1000); tPrev = t;
   if (!printKind) {
     lastSolve = solve();
-    if (!paused) for (const k in level) level[k] = Math.max(0, Math.min(1, level[k] + lastSolve.rate[k] * dt * speed));
+    if (!paused) {
+      const rt = lastSolve.rt, f = dt * speed;
+      for (const t of HOLDS) { kant[t].B = Math.max(0, kant[t].B + (rt[t+":B"] || 0) * f); kant[t].S = Math.max(0, kant[t].S + (rt[t+":S"] || 0) * f); verdeel(t); }
+      level.UT = Math.max(0, Math.min(1, level.UT + (rt.UT || 0) / capTon("UT") * f));
+    }
     render();
   }
   requestAnimationFrame(tick);
@@ -990,20 +1034,20 @@ svg.addEventListener("mouseleave", () => tip.style.opacity = 0);
 
 function applyState(t) { for (const k in t) { if (VALVES[k]) VALVES[k].open = !!t[k]; if (PUMPS[k]) PUMPS[k].on = !!t[k]; } }
 const rust = () => applyState(computeTarget("rust"));
-const geballast = () => { for (const t of TK) level[t] = t === "UT" ? 0.6 : Math.min(doel[t], 0.9); };
+const geballast = () => { for (const t of TK) setLevel(t, t === "UT" ? 0.6 : Math.min(doel[t], 0.9)); };
 function setScenario(s) {
   scenario = s;
   document.querySelectorAll("[data-scn]").forEach(b => b.classList.toggle("on", b.dataset.scn === s));
   window.TITLE.textContent = {in:"Ballast in", uit:"Ontballasten", vrij:"Vrij oefenen"}[s];
   rust();
-  if (s === "in") for (const k in level) level[k] = 0;
+  if (s === "in") for (const k of TK) setLevel(k, 0);
   if (s === "uit") geballast();
   taskChanged();
 }
 document.querySelectorAll("[data-scn]").forEach(b => b.onclick = () => setScenario(b.dataset.scn));
 document.getElementById("btnRust").onclick = rust;
 document.getElementById("btnTarget").onclick = () => { const t = target(); if (t) applyState(t); };
-document.getElementById("lvEmpty").onclick = () => { for (const k in level) level[k] = 0; };
+document.getElementById("lvEmpty").onclick = () => { for (const k of TK) setLevel(k, 0); };
 document.getElementById("lvFull").onclick = geballast;
 document.getElementById("btnPause").onclick = e => { paused = !paused; e.target.textContent = paused ? "▶ Verder" : "⏸ Pauze"; e.target.classList.toggle("on", paused); };
 document.getElementById("ladingNu").onchange = e => ladingNu = Math.max(0, +e.target.value || 0);
@@ -1013,7 +1057,7 @@ speed = cap().real ? 30 : 3; speedSel.value = String(speed);
 document.getElementById("capNote").textContent = cap().real
   ? `Gerekend met ${PROFIEL.capaciteit.pomp_m3h} m³/h pomp en ${PROFIEL.capaciteit.ejector_m3h} m³/h ejector; 1× is echte tijd.`
   : "Snelheden zijn indicatief en versneld. Vul de pompcapaciteit in voor echte tijden.";
-document.getElementById("meterNote").textContent = `Peilen in cm en ton via de tanktabellen. Streepjes bij de meters: groen = doelpeil, grijs = zaadhout${TK.some(t => alarmFrac(t)) ? ", oranje = alarm" : ""}. Balk vol = ${TK.every(t => num(P(t).max)!==null) ? "max. niveau" : BALK_CM + " cm (max. niveau nog niet ingevuld)"}.`;
+document.getElementById("meterNote").textContent = `Peilen in cm en ton via de tanktabellen. Meters: bovenste helft = BB, onderste = SB. Streepjes: groen = doelpeil, grijs = zaadhout${TK.some(t => alarmFrac(t)) ? ", oranje = alarm" : ""}. Balk vol = ${TK.every(t => num(P(t).max)!==null) ? "max. niveau" : BALK_CM + " cm (max. niveau nog niet ingevuld)"}.`;
 
 /* ---------------- scheepsgegevens + over ---------------- */
 const leeg = '<span class="leeg">–</span>';

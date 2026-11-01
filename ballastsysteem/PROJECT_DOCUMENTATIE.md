@@ -70,7 +70,7 @@ Alles wat per schip kan verschillen staat in **één blok bovenin `ballast_simul
 **Of met de hand:** het bestand openen in Kladblok en het blok aanpassen. Let op: één vergeten komma of aanhalingsteken en de simulator opent niet meer.
 
 - **peil:** hoogwateralarm, maximaal niveau en doelpeil per ruim en U-tank (cm).
-- **zaadhout_cm:** hoogte van het zaadhout (nu 140 cm, uit het hoofd). Grijze streep bij de meters en een melding als het peil erboven komt.
+- **zaadhout_cm:** hoogte van het zaadhout (nu 140 cm, uit het hoofd). Het zaadhout is een dicht schot tussen BB en SB in het ruim. Daaronder zijn de twee kanten gescheiden, daarboven lopen ze in elkaar over.
 - **meting_lading_ton:** lading die nog aan boord was tijdens de metingen van het ballastplan (13,5 t). Die zit in de totalen van het ballastplan; de simulator trekt hem eraf om de ballast te tonen. Voor de geschatte diepgang vul je in de simulator in hoeveel lading er nu aan boord is.
 - **utank_ton:** inhoud van de U-tank bij max. niveau (nog onbekend; de simulator rekent dan indicatief met 50 t).
 - **tanktabel:** per ruim de punten peil (cm) → ton. Tussenliggende waarden worden lineair geïnterpoleerd, zoals in de spreadsheet. Boven de hoogste tabelwaarde wordt de laatste helling doorgetrokken (onzeker, grijs op het blad).
@@ -90,6 +90,7 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 
 - **Situatie:** Ballast in (lege ruimen), Ontballasten (ruimen geballast) of Vrij oefenen.
 - **Taak:** kies de ruimen (ruim 3, U-tank, ruim 2, ruim 1) en de pomp (achter, voor, beide). Daaruit berekent de simulator de doelstand, inclusief de deelafsluiters. Bij Ballast in kies je als doel een **diepgang uit het ballastplan** (de ruimen en doelpeilen worden dan overgenomen) of je stelt per ruim zelf een doelpeil in (cm, met de tonnen erbij).
+- **BB en SB apart:** onder het zaadhout houdt de simulator per ruim BB en SB apart bij (Ballast n BB vult/leegt alleen BB, Ballast n SB alleen SB). Pomp je één kant leeg, dan zakt eerst het hele ruim tot het zaadhout en daarna alleen die kant. Bij een verschil van 15 t of meer komt een melding over slagzij. De meters tonen BB (bovenste helft) en SB (onderste helft), het schema kleurt de BB- en SB-helft van elk ruim apart.
 - **Peilen:** per ruim in cm en ton (via de tanktabel), met de totale ballast en de geschatte diepgang uit het ballastplan (rekening houdend met de lading die nu aan boord is).
 - **Hulp:** stappenplan dat zichzelf afvinkt (voorbereidende stappen blijven "live" tot de pomp gestart is), oranje ringen rond wat nog anders moet, "Zet alles in doelstand" en "Ruststand".
 - **Stroming:** vanaf buitenboord door de draaiende pomp en open afsluiters naar tanks of ejector; vanaf de lopende ejector terug naar de ruimen met water. Blauwe streepjes in de stroomrichting.
@@ -116,7 +117,7 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 ## Open punten
 
 1. **Alarm, max. niveau en Sygo-stand** opzoeken in het tabellenboek en invullen.
-2. **Zaadhout:** 140 cm controleren, en wat het betekent voor het ballasten (lopen BB en SB erboven in elkaar over?).
+2. **Zaadhout:** de hoogte van 140 cm controleren.
 3. **Tanktabellen:** het aantal ton per cm neemt af naarmate het ruim voller is (ruim 1: 2,9 t/cm bij 70 cm, 1,0 t/cm boven 145 cm; ruim 2: 0,7 t/cm bij 245–250 cm). Bij een ruim met rechte wanden verwacht je ongeveer gelijke tonnen per cm. Controleren in het tabellenboek.
 4. **Ballastplan:** de binnen-meting bij 1,50 m is onvolledig (in de spreadsheet geeft dat inzinking 126,5 en trim −77) en bij 1,80 m ontbreekt hij; beide zijn leeg gelaten.
 5. **U-tank:** inhoud (t) en eventueel een tanktabel.
@@ -144,7 +145,7 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
   - tanktabellen (cm → ton) en ballastplan per diepgang uit `ballast.xlsx`;
   - peilen in cm en ton, totale ballast en geschatte diepgang (lading tijdens de meting: 13,5 t, apart gehouden);
   - Ballast in: doel kiezen als diepgang uit het ballastplan;
-  - zaadhout (140 cm) bij de meters;
+  - zaadhout (140 cm) als schot tussen BB en SB: kanten apart onder het zaadhout, melding bij slagzij;
   - blad 3 bij Ballast in en Ontballasten: ballastplan en tanktabellen per 10 cm;
   - invulscherm uitgebreid met tanktabellen en ballastplan (plakken uit Excel kan);
   - "Over dit project" verwijderd.
