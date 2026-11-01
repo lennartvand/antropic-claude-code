@@ -119,7 +119,7 @@ const PROFIEL = {
     UT: { alarm: null, max: null, doel: null },   // U-tank (ballastruimte rond de methanoltank)
   },
   zaadhout_cm: 140,                // hoogte zaadhout in de ruimen (uit het hoofd, nog controleren)
-  voorlading_ton: 13.5,            // vaste hoeveelheid die bij elk tonnage wordt opgeteld (zoals in ballast.xlsx)
+  meting_lading_ton: 13.5,         // lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")
   utank_ton: null,                 // inhoud U-tank in ton bij max. niveau
 
   // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.
@@ -129,7 +129,7 @@ const PROFIEL = {
     T3: [[10, 28.106], [15, 42.501], [20, 57.036], [25, 71.677], [60, 175.642], [65, 190.566], [70, 205.493], [115, 304.096], [120, 312.434]],
   },
 
-  // Ballastplan per diepgang (metingen uit ballast.xlsx). Peilen in cm als [BB, SB]; ton = totaal incl. voorlading;
+  // Ballastplan per diepgang (metingen uit ballast.xlsx). Peilen in cm als [BB, SB]; ton = ballast + lading aan boord tijdens de meting;
   // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].
   ballastplan: [
     { diepgang: 1.4, T1: [73, 72], T2: null, T3: null, ton: 223.494, buiten: [141.17, 2.5], binnen: [140.25, 2] },
@@ -240,7 +240,9 @@ const PROFIEL = {
       <span style="font-size:14px">Snelheid</span>
       <select id="speed"><option value="1">1×</option><option value="3">3×</option><option value="10">10×</option><option value="30">30×</option><option value="100">100×</option><option value="300">300×</option></select>
     </div>
-    <div class="box" id="totNote" style="font-weight:600;color:var(--blue)"></div>
+    <div class="box" id="totNote"><div id="totText" style="font-weight:600;color:var(--blue)"></div>
+      <div class="row" style="margin-bottom:0"><span>Lading aan boord</span><input type="number" id="ladingNu" min="0" step="10" value="0"> t</div>
+      <div class="note" style="margin-top:2px">Telt mee voor de geschatte diepgang.</div></div>
     <div class="note" id="meterNote"></div>
     <div class="note" id="capNote"></div>
 
@@ -338,7 +340,11 @@ function cap() {                                         // ton per seconde bij 
 }
 // Totaal en geschatte diepgang uit het ballastplan (ton -> gemeten inzinking buiten, anders de doeldiepgang).
 const plan = () => (PROFIEL.ballastplan || []).filter(r => num(r.ton) !== null).sort((a,b) => a.ton - b.ton);
-const totaalTon = () => TK.reduce((s,t) => s + (tonKnown(t) ? tonOf(t, level[t]) : 0), 0) + (num(PROFIEL.voorlading_ton) || 0);
+// Het ballastplan is gemeten met nog wat lading aan boord (meting_lading_ton). Voor de diepgang telt de lading die nu aan boord is mee.
+const metingLading = () => num(PROFIEL.meting_lading_ton) || 0;
+const planBallast = r => num(r.ton) !== null ? r.ton - metingLading() : null;
+let ladingNu = 0;
+const ballastTon = () => TK.reduce((s,t) => s + (tonKnown(t) ? tonOf(t, level[t]) : 0), 0);
 function diepgangTxt(ton) {
   const a = plan().map(r => [r.ton, r.buiten && num(r.buiten[0]) !== null ? r.buiten[0] / 100 : r.diepgang]);
   if (a.length < 2) return "";
@@ -800,7 +806,7 @@ let lastSolve = {flows:new Map(),rate:{},msgs:[],ejActive:{}};
 let STEPS = [], latch = [];
 
 const pr0 = () => task.plan >= 0 ? (PROFIEL.ballastplan || [])[task.plan] : null;
-const planTxt = () => { const r = pr0(); return r ? ` Ballastplan ${fmt(r.diepgang)} m: totaal ${Math.round(r.ton)} t.` : ""; };
+const planTxt = () => { const r = pr0(); return r ? ` Ballastplan ${fmt(r.diepgang)} m: ${Math.round(planBallast(r))} t ballast.` : ""; };
 function buildSteps() {
   const ps = taskPumps(), ts = taskTanks();
   const kant = ps.map(p => p==="PA" ? "achter" : "voor");
@@ -871,7 +877,7 @@ function renderTask() {
   const box = document.getElementById("doelBox"); box.innerHTML = "";
   if (scenario === "in" && (PROFIEL.ballastplan || []).length) {
     const r = document.createElement("div"); r.className = "row";
-    r.innerHTML = `<span class="lab">Doel</span><select id="planSel"><option value="-1">Eigen doelpeil</option>${PROFIEL.ballastplan.map((p,i) => `<option value="${i}"${i===task.plan?" selected":""}>Diepgang ${fmt(p.diepgang)} m – ${Math.round(p.ton)} t</option>`).join("")}</select>`;
+    r.innerHTML = `<span class="lab">Doel</span><select id="planSel"><option value="-1">Eigen doelpeil</option>${PROFIEL.ballastplan.map((p,i) => `<option value="${i}"${i===task.plan?" selected":""}>Diepgang ${fmt(p.diepgang)} m – ${Math.round(planBallast(p))} t ballast</option>`).join("")}</select>`;
     r.querySelector("select").onchange = e => kiesPlan(+e.target.value);
     box.appendChild(r);
   }
@@ -945,9 +951,9 @@ function render() {
     if (!all.length) { const li = document.createElement("li"); li.className = "info"; li.textContent = pumpOn() ? "Systeem loopt normaal." : (isRust() ? "Ruststand: pompen uit, alles dicht, buitenboord open." : "Pompen staan uit."); msgsEl.appendChild(li); }
     for (const [c,t] of all) { const li = document.createElement("li"); li.className = c; li.textContent = t; msgsEl.appendChild(li); }
   }
-  const tot = totaalTon(), dg = diepgangTxt(tot);
-  window.GAUGE_NOTE.textContent = `totaal ≈ ${Math.round(tot)} t` + (num(PROFIEL.voorlading_ton) ? " (incl. voorlading)" : "") + (dg ? " · " + dg : "");
-  document.getElementById("totNote").textContent = `Ballast totaal ≈ ${Math.round(tot)} t` + (dg ? ` · ${dg}` : "");
+  const bal = ballastTon(), dg = diepgangTxt(bal + ladingNu);
+  window.GAUGE_NOTE.textContent = `ballast ≈ ${Math.round(bal)} t` + (dg ? " · " + dg : "") + (ladingNu ? ` (met ${Math.round(ladingNu)} t lading)` : "");
+  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (dg ? ` · ${dg}` : "");
   updateSteps();
 }
 
@@ -1000,6 +1006,7 @@ document.getElementById("btnTarget").onclick = () => { const t = target(); if (t
 document.getElementById("lvEmpty").onclick = () => { for (const k in level) level[k] = 0; };
 document.getElementById("lvFull").onclick = geballast;
 document.getElementById("btnPause").onclick = e => { paused = !paused; e.target.textContent = paused ? "▶ Verder" : "⏸ Pauze"; e.target.classList.toggle("on", paused); };
+document.getElementById("ladingNu").onchange = e => ladingNu = Math.max(0, +e.target.value || 0);
 const speedSel = document.getElementById("speed");
 speedSel.onchange = e => speed = +e.target.value;
 speed = cap().real ? 30 : 3; speedSel.value = String(speed);
@@ -1018,7 +1025,7 @@ const mcm = v => num(v)!==null ? v + " cm" : leeg;
   for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${mcm(P(t).alarm)}</td><td>${mcm(P(t).max)}</td><td>${mcm(P(t).doel)}</td><td>${tabel(t) ? (PROFIEL.tanktabel[t].length + " pt") : leeg}</td></tr>`;
   h += `</table><table class="data" style="margin-top:6px">`;
   h += `<tr><td>Zaadhout</td><td colspan="2">${mcm(PROFIEL.zaadhout_cm)}</td></tr>`;
-  h += `<tr><td>Voorlading</td><td colspan="2">${num(PROFIEL.voorlading_ton)!==null ? fmt(PROFIEL.voorlading_ton,1)+" t" : leeg}</td></tr>`;
+  h += `<tr><td>Lading tijdens meting</td><td colspan="2">${num(PROFIEL.meting_lading_ton)!==null ? fmt(PROFIEL.meting_lading_ton,1)+" t" : leeg}</td></tr>`;
   h += `<tr><td>U-tank inhoud</td><td colspan="2">${num(PROFIEL.utank_ton)!==null ? PROFIEL.utank_ton+" t" : leeg}</td></tr>`;
   h += `<tr><td>Ballastplan</td><td colspan="2">${(PROFIEL.ballastplan||[]).length ? PROFIEL.ballastplan.map(r => fmt(r.diepgang)).join(" · ") + " m" : leeg}</td></tr>`;
   for (const r of PROFIEL.diepgang || []) h += `<tr><td>Diepgang${r.omschrijving ? " ("+r.omschrijving+")" : ""}</td><td>${mv(r.diepgang)}</td><td>Sygo ${num(r.sygo)!==null ? r.sygo+" mt" : leeg}</td></tr>`;
@@ -1046,7 +1053,8 @@ function openGegevens() {
   for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${inp("g_"+t+"_alarm", nv(P(t).alarm))}</td><td>${inp("g_"+t+"_max", nv(P(t).max))}</td><td>${inp("g_"+t+"_doel", nv(P(t).doel))}</td></tr>`;
   h += `</table>
     <div class="row"><span class="lab" style="min-width:150px">Zaadhout (cm)</span>${inp("g_zaad", nv(pr.zaadhout_cm))}</div>
-    <div class="row"><span class="lab" style="min-width:150px">Voorlading (t)</span>${inp("g_voor", nv(pr.voorlading_ton))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Lading tijdens meting (t)</span>${inp("g_voor", nv(pr.meting_lading_ton))}</div>
+    <p class="note" style="margin-top:0">Lading die nog aan boord was toen het ballastplan werd gemeten. Die zit in de kolom "ton totaal" van het ballastplan.</p>
     <div class="row"><span class="lab" style="min-width:150px">U-tank inhoud (t)</span>${inp("g_ut", nv(pr.utank_ton))}</div>
     <h4>Tanktabellen (cm → ton)</h4><p class="note" style="margin-top:0">Eén punt per regel: peil in cm en ton, gescheiden door een puntkomma of tab. Je kunt de twee kolommen ook rechtstreeks uit Excel plakken.</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${["T1","T2","T3"].map(t => `<label style="font-size:14px">${TKNAAM[t]}<textarea id="g_tab_${t}" rows="9" style="width:100%;font:13px monospace">${((pr.tanktabel||{})[t]||[]).map(r => nv(r[0]) + "; " + nv(r[1])).join("\n")}</textarea></label>`).join("")}</div>
@@ -1091,7 +1099,7 @@ function collectGegevens() {
     p.peil[t] = r;
   }
   delete p.volume;
-  p.zaadhout_cm = rd($("g_zaad"), "zaadhout"); p.voorlading_ton = rd($("g_voor"), "voorlading"); p.utank_ton = rd($("g_ut"), "U-tank inhoud");
+  p.zaadhout_cm = rd($("g_zaad"), "zaadhout"); p.meting_lading_ton = rd($("g_voor"), "lading tijdens meting"); delete p.voorlading_ton; p.utank_ton = rd($("g_ut"), "U-tank inhoud");
   const getal = (x, wat, mag0) => { x = (x||"").trim().replace(",", "."); if (!x) return null; const v = Number(x); if (!isFinite(v)) { fouten.push(`${wat}: "${x}" is geen getal`); return null; } return v; };
   const regels = id => $(id).value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => l.split(/\t|;/).map(c => c.trim()));
   p.tanktabel = {};
@@ -1132,11 +1140,11 @@ function profielJs(p) {
   for (const t of ["T3","T2","T1","UT"]) L.push(`    ${pad(`${t}: { alarm: ${js(p.peil[t].alarm)}, max: ${js(p.peil[t].max)}, doel: ${js(p.peil[t].doel)} },`, 50)}// ${t==="UT" ? "U-tank (ballastruimte rond de methanoltank)" : TKNAAM[t]}`);
   L.push("  },");
   L.push(`  ${pad("zaadhout_cm: " + js(p.zaadhout_cm) + ",", 33)}// hoogte zaadhout in de ruimen`);
-  L.push(`  ${pad("voorlading_ton: " + js(p.voorlading_ton) + ",", 33)}// vaste hoeveelheid die bij elk tonnage wordt opgeteld`);
+  L.push(`  ${pad("meting_lading_ton: " + js(p.meting_lading_ton) + ",", 33)}// lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")`);
   L.push(`  ${pad("utank_ton: " + js(p.utank_ton) + ",", 33)}// inhoud U-tank in ton bij max. niveau`, "");
   L.push("  // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.", "  tanktabel: {");
   for (const t of ["T1","T2","T3"]) L.push(`    ${t}: [${((p.tanktabel||{})[t]||[]).map(ar).join(", ")}],`);
-  L.push("  },", "", "  // Ballastplan per diepgang. Peilen in cm als [BB, SB]; ton = totaal incl. voorlading;", "  // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].", "  ballastplan: [");
+  L.push("  },", "", "  // Ballastplan per diepgang. Peilen in cm als [BB, SB]; ton = ballast + lading aan boord tijdens de meting;", "  // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].", "  ballastplan: [");
   for (const r of p.ballastplan || []) L.push(`    { diepgang: ${js(r.diepgang)}, T1: ${ar(r.T1)}, T2: ${ar(r.T2)}, T3: ${ar(r.T3)}, ton: ${js(r.ton)}, buiten: ${ar(r.buiten)}, binnen: ${ar(r.binnen)} },`);
   L.push("  ],", "", "  // Diepgang en Sygo-stand (uit het tabellenboek). Voeg zo veel regels toe als nodig.", "  diepgang: [");
   for (const r of p.diepgang) L.push(`    { omschrijving: ${js(r.omschrijving)}, diepgang: ${js(r.diepgang)}, sygo: ${js(r.sygo)} },`);
@@ -1194,7 +1202,7 @@ const vakcm = v => num(v)!==null ? v + " cm" : '<span class="vak">&nbsp;</span>'
 function peilTabel() {
   let h = `<table><tr><th></th><th>Hoogwateralarm</th><th>Max. niveau</th><th>Doelpeil</th></tr>`;
   for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${vakcm(P(t).alarm)}</td><td>${vakcm(P(t).max)}</td><td>${vakcm(P(t).doel)}</td></tr>`;
-  h += `</table><p>Zaadhout: ${vakcm(PROFIEL.zaadhout_cm)} &nbsp;&nbsp; Voorlading: ${num(PROFIEL.voorlading_ton)!==null ? fmt(PROFIEL.voorlading_ton,1)+" t" : '<span class="vak">&nbsp;</span>'} &nbsp;&nbsp; U-tank inhoud: ${num(PROFIEL.utank_ton)!==null ? PROFIEL.utank_ton+" t" : '<span class="vak">&nbsp;</span> t'}</p><table>`;
+  h += `</table><p>Zaadhout: ${vakcm(PROFIEL.zaadhout_cm)}  &nbsp;&nbsp; U-tank inhoud: ${num(PROFIEL.utank_ton)!==null ? PROFIEL.utank_ton+" t" : '<span class="vak">&nbsp;</span> t'}</p><table>`;
   h += `<tr><th>Omschrijving</th><th>Diepgang</th><th>Sygo-stand</th></tr>`;
   const rows = (PROFIEL.diepgang||[]).filter(r => r.omschrijving || num(r.diepgang)!==null);
   for (const r of rows) h += `<tr><td>${r.omschrijving||""}</td><td>${vak(r.diepgang)}</td><td>${num(r.sygo)!==null ? r.sygo+" mt" : '<span class="vak">&nbsp;</span>'}</td></tr>`;
@@ -1253,10 +1261,10 @@ function planBlad(kop, voet) {
   const c = x => num(x) !== null ? fmt(x, Number.isInteger(x) ? 0 : 1) : "";
   const pr = a => Array.isArray(a) ? `${c(a[0])} / ${c(a[1])}` : "–";
   let h = `<div style="break-before:page"><h1>Ballastplan en tanktabellen – ${kop}</h1><div class="cols"><div>
-    <h2>Ballastplan per diepgang</h2><table><tr><th rowspan="2">Diepgang</th><th colspan="3">Peil in ruim, BB / SB (cm)</th><th rowspan="2">Totaal (t)</th><th colspan="2">Gemeten buiten</th><th colspan="2">Gemeten binnen</th></tr>
+    <h2>Ballastplan per diepgang</h2><table><tr><th rowspan="2">Diepgang</th><th colspan="3">Peil in ruim, BB / SB (cm)</th><th rowspan="2">Ballast (t)</th><th colspan="2">Gemeten buiten</th><th colspan="2">Gemeten binnen</th></tr>
     <tr><th>Ruim 1</th><th>Ruim 2</th><th>Ruim 3</th><th>inz.</th><th>trim</th><th>inz.</th><th>trim</th></tr>`;
-  for (const r of PROFIEL.ballastplan || []) h += `<tr><td><b>${fmt(r.diepgang)} m</b></td><td>${pr(r.T1)}</td><td>${pr(r.T2)}</td><td>${pr(r.T3)}</td><td>${c(r.ton !== null ? Math.round(r.ton*10)/10 : null)}</td><td>${r.buiten ? c(Math.round(r.buiten[0]*10)/10) : "–"}</td><td>${r.buiten ? c(r.buiten[1]) : "–"}</td><td>${r.binnen ? c(Math.round(r.binnen[0]*10)/10) : "–"}</td><td>${r.binnen ? c(r.binnen[1]) : "–"}</td></tr>`;
-  h += `</table><p class="klein">Totaal inclusief voorlading${num(PROFIEL.voorlading_ton)!==null ? " (" + fmt(PROFIEL.voorlading_ton,1) + " t)" : ""}. Inzinking in cm (gemiddelde van BB en SB, voor, midden en achter); trim = achter min voor, in cm (plus = achter dieper).</p>
+  for (const r of PROFIEL.ballastplan || []) h += `<tr><td><b>${fmt(r.diepgang)} m</b></td><td>${pr(r.T1)}</td><td>${pr(r.T2)}</td><td>${pr(r.T3)}</td><td>${c(planBallast(r) !== null ? Math.round(planBallast(r)*10)/10 : null)}</td><td>${r.buiten ? c(Math.round(r.buiten[0]*10)/10) : "–"}</td><td>${r.buiten ? c(r.buiten[1]) : "–"}</td><td>${r.binnen ? c(Math.round(r.binnen[0]*10)/10) : "–"}</td><td>${r.binnen ? c(r.binnen[1]) : "–"}</td></tr>`;
+  h += `</table><p class="klein">${metingLading() ? `Gemeten met nog ${fmt(metingLading(),1)} t lading aan boord; die zit niet in de kolom Ballast, wel in de gemeten diepgang. ` : ""}Inzinking in cm (gemiddelde van BB en SB, voor, midden en achter); trim = achter min voor, in cm (plus = achter dieper).</p>
     <h2>Rekenvoorbeeld</h2><p>Ruim 2 op 77 cm: tussen 75 cm (${c(tonAt("T2",75))} t) en 80 cm (${c(tonAt("T2",80))} t) liggen ${c((tonAt("T2",80)-tonAt("T2",75))/5)} t per cm. 77 cm = ${c(tonAt("T2",75))} + 2 × ${c((tonAt("T2",80)-tonAt("T2",75))/5)} = <b>${c(tonAt("T2",77))} t</b>.</p>
     </div><div><h2>Tanktabellen (ton per peil)</h2><table><tr><th>Peil (cm)</th>${["T1","T2","T3"].map(t => `<th>${TKNAAM[t]}</th>`).join("")}</tr>`;
   const punten = t => new Set(((PROFIEL.tanktabel||{})[t]||[]).map(r => r[0]));
