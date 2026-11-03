@@ -121,6 +121,7 @@ const PROFIEL = {
   zaadhout_cm: 140,                // zaadhout: dicht schot tussen BB en SB, tot deze hoogte (uit het hoofd, nog controleren)
   meting_lading_ton: 13.5,         // lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")
   utank_ton: null,                 // inhoud U-tank in ton bij max. niveau
+  helling_graden_per_100t: null,   // slagzij: gemeten helling (graden) bij 100 t meer aan één kant (uit een proef)
 
   // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.
   tanktabel: {
@@ -369,14 +370,62 @@ function meterTxt(t) {
 }
 const slagzijTon = () => HOLDS.reduce((s,t) => s + kant[t].B - kant[t].S, 0);       // + = BB zwaarder
 const ballastTon = () => TK.reduce((s,t) => s + (tonKnown(t) ? tonOf(t, level[t]) : 0), 0);
-function diepgangTxt(ton) {
-  const a = plan().map(r => [r.ton, r.buiten && num(r.buiten[0]) !== null ? r.buiten[0] / 100 : r.diepgang]);
-  if (a.length < 2) return "";
-  if (ton < a[0][0]) return `diepgang < ${fmt(a[0][1])} m`;
-  if (ton > a[a.length-1][0]) return `diepgang > ${fmt(a[a.length-1][1])} m`;
-  return `diepgang ≈ ${fmt(interp(a, ton, 0, 1))} m`;
-}
+// Ligging van het schip, geschat uit de metingen in het ballastplan:
+// - diepgang: tussen twee metingen lineair; daarbuiten doorgetrokken met de gemiddelde tonnen per cm inzinking;
+// - trim (achter min voor): een lineair verband trim = a + b1·W1 + b2·W2 + b3·W3 (W = ton in ruim n), passend gemaakt op de metingen;
+// - slagzij in graden alleen als helling_graden_per_100t is ingevuld.
 const gem = v => Array.isArray(v) ? (num(v[0]) !== null && num(v[1]) !== null ? (v[0]+v[1])/2 : num(v[0]) ?? num(v[1])) : null;
+const planTon = (r, t) => gem(r[t]) ? tonAt(t, gem(r[t])) : 0;
+function kleinsteKwadraten(X, y) {                       // normaalvergelijkingen, opgelost met Gauss-eliminatie
+  const n = X[0].length, A = Array.from({length:n}, (_, i) => [...Array(n).fill(0), 0]);
+  X.forEach((x, k) => { for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += x[i]*x[j]; A[i][n] += x[i]*y[k]; } });
+  for (let i = 0; i < n; i++) {
+    let m = i; for (let r = i+1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[m][i])) m = r;
+    [A[i], A[m]] = [A[m], A[i]];
+    if (Math.abs(A[i][i]) < 1e-9) return null;
+    for (let r = 0; r < n; r++) if (r !== i) { const f = A[r][i] / A[i][i]; for (let c = i; c <= n; c++) A[r][c] -= f * A[i][c]; }
+  }
+  return A.map((r, i) => r[n] / r[i]);
+}
+const LIGGING = (() => {
+  const rows = plan().filter(r => r.buiten && num(r.buiten[0]) !== null);
+  const pts = rows.map(r => [r.ton, r.buiten[0]]);
+  let tpc = null;                                        // ton per cm inzinking (gemiddeld over alle metingen)
+  if (pts.length >= 2) { const f = kleinsteKwadraten(pts.map(p => [1, p[0]]), pts.map(p => p[1])); if (f && f[1] > 0) tpc = 1 / f[1]; }
+  const tr = rows.filter(r => num(r.buiten[1]) !== null);
+  const trim = tr.length >= 5 ? kleinsteKwadraten(tr.map(r => [1, ...HOLDS.map(t => planTon(r, t))]), tr.map(r => r.buiten[1])) : null;
+  return { pts, tpc, trim };
+})();
+function ligging(ton) {
+  const { pts, tpc, trim } = LIGGING, L = {};
+  if (pts.length >= 2) {
+    const a = pts[0], b = pts[pts.length-1];
+    if (ton < a[0] && tpc) { L.inz = a[1] - (a[0] - ton) / tpc; L.door = true; }
+    else if (ton > b[0] && tpc) { L.inz = b[1] + (ton - b[0]) / tpc; L.door = true; }
+    else L.inz = interp(pts, ton, 0, 1);
+  }
+  if (trim) {
+    L.trim = trim[0] + HOLDS.reduce((s, t, i) => s + trim[i+1] * (kant[t].B + kant[t].S), 0);
+    if (L.inz !== undefined) { L.voor = L.inz - L.trim / 2; L.achter = L.inz + L.trim / 2; }
+  }
+  const g = num(PROFIEL.helling_graden_per_100t), sz = slagzijTon();
+  if (g !== null) L.helling = sz / 100 * g;
+  return L;
+}
+const cmTxt = v => fmt(v / 100) + " m";
+function liggingTxt(L, kort) {
+  const d = [];
+  if (L.inz !== undefined) d.push(`diepgang ${L.door ? "≈ " : ""}${cmTxt(L.inz)}${L.door ? " (doorgetrokken)" : ""}`);
+  if (L.trim !== undefined) {
+    const t = Math.round(L.trim);
+    d.push(t === 0 ? "≈ gelijklastig" : `≈ ${Math.abs(t)} cm ${t > 0 ? "achterover" : "voorover"}`);
+    if (!kort && L.voor !== undefined) d.push(`voor ${cmTxt(L.voor)} / achter ${cmTxt(L.achter)}`);
+  }
+  const sz = slagzijTon();
+  if (L.helling !== undefined && Math.abs(L.helling) >= 0.1) d.push(`helling ≈ ${fmt(Math.abs(L.helling),1)}° naar ${L.helling > 0 ? "BB" : "SB"}`);
+  else if (Math.abs(sz) >= 1) d.push(`${sz > 0 ? "BB" : "SB"} ${Math.round(Math.abs(sz))} t zwaarder`);
+  return d.join(" · ");
+}
 
 /* ---------------- svg helpers ---------------- */
 const svg = document.getElementById("svg");
@@ -990,10 +1039,9 @@ function render() {
     if (!all.length) { const li = document.createElement("li"); li.className = "info"; li.textContent = pumpOn() ? "Systeem loopt normaal." : (isRust() ? "Ruststand: pompen uit, alles dicht, buitenboord open." : "Pompen staan uit."); msgsEl.appendChild(li); }
     for (const [c,t] of all) { const li = document.createElement("li"); li.className = c; li.textContent = t; msgsEl.appendChild(li); }
   }
-  const bal = ballastTon(), dg = diepgangTxt(bal + ladingNu);
-  window.GAUGE_NOTE.textContent = `ballast ≈ ${Math.round(bal)} t` + (dg ? " · " + dg : "") + (ladingNu ? ` (met ${Math.round(ladingNu)} t lading)` : "");
-  const sz = slagzijTon();
-  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (dg ? ` · ${dg}` : "") + (Math.abs(sz) >= 1 ? ` · ${sz > 0 ? "BB" : "SB"} ${Math.round(Math.abs(sz))} t zwaarder` : "");
+  const bal = ballastTon(), lg = ligging(bal + ladingNu);
+  window.GAUGE_NOTE.textContent = `ballast ≈ ${Math.round(bal)} t` + (liggingTxt(lg, true) ? " · " + liggingTxt(lg, true) : "");
+  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (liggingTxt(lg) ? " · " + liggingTxt(lg) : "");
   updateSteps();
 }
 
@@ -1057,7 +1105,7 @@ speed = cap().real ? 30 : 3; speedSel.value = String(speed);
 document.getElementById("capNote").textContent = cap().real
   ? `Gerekend met ${PROFIEL.capaciteit.pomp_m3h} m³/h pomp en ${PROFIEL.capaciteit.ejector_m3h} m³/h ejector; 1× is echte tijd.`
   : "Snelheden zijn indicatief en versneld. Vul de pompcapaciteit in voor echte tijden.";
-document.getElementById("meterNote").textContent = `Peilen in cm en ton via de tanktabellen. Meters: bovenste helft = BB, onderste = SB. Streepjes: groen = doelpeil, grijs = zaadhout${TK.some(t => alarmFrac(t)) ? ", oranje = alarm" : ""}. Balk vol = ${TK.every(t => num(P(t).max)!==null) ? "max. niveau" : BALK_CM + " cm (max. niveau nog niet ingevuld)"}.`;
+document.getElementById("meterNote").textContent = `Peilen in cm en ton via de tanktabellen. Meters: bovenste helft = BB, onderste = SB. Streepjes: groen = doelpeil, grijs = zaadhout${TK.some(t => alarmFrac(t)) ? ", oranje = alarm" : ""}. Balk vol = ${TK.every(t => num(P(t).max)!==null) ? "max. niveau" : BALK_CM + " cm (max. niveau nog niet ingevuld)"}. Diepgang en trim zijn schattingen uit de metingen van het ballastplan; hoe verder je ervan af zit, hoe onzekerder.`;
 
 /* ---------------- scheepsgegevens + over ---------------- */
 const leeg = '<span class="leeg">–</span>';
@@ -1100,6 +1148,8 @@ function openGegevens() {
     <div class="row"><span class="lab" style="min-width:150px">Lading tijdens meting (t)</span>${inp("g_voor", nv(pr.meting_lading_ton))}</div>
     <p class="note" style="margin-top:0">Lading die nog aan boord was toen het ballastplan werd gemeten. Die zit in de kolom "ton totaal" van het ballastplan.</p>
     <div class="row"><span class="lab" style="min-width:150px">U-tank inhoud (t)</span>${inp("g_ut", nv(pr.utank_ton))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Helling per 100 t (°)</span>${inp("g_hel", nv(pr.helling_graden_per_100t))}</div>
+    <p class="note" style="margin-top:0">Uit een proef: pomp 100 t meer aan één kant en lees de hellingmeter af. Leeg = de simulator toont alleen het verschil in ton.</p>
     <h4>Tanktabellen (cm → ton)</h4><p class="note" style="margin-top:0">Eén punt per regel: peil in cm en ton, gescheiden door een puntkomma of tab. Je kunt de twee kolommen ook rechtstreeks uit Excel plakken.</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${["T1","T2","T3"].map(t => `<label style="font-size:14px">${TKNAAM[t]}<textarea id="g_tab_${t}" rows="9" style="width:100%;font:13px monospace">${((pr.tanktabel||{})[t]||[]).map(r => nv(r[0]) + "; " + nv(r[1])).join("\n")}</textarea></label>`).join("")}</div>
     <h4>Ballastplan per diepgang</h4><p class="note" style="margin-top:0">Eén diepgang per regel, kolommen gescheiden door puntkomma of tab (plakken uit Excel kan):<br><code>diepgang; R1 BB; R1 SB; R2 BB; R2 SB; R3 BB; R3 SB; ton totaal; inz. buiten; trim buiten; inz. binnen; trim binnen</code>. Leeg vak = geen ballast / niet gemeten.</p>
@@ -1143,7 +1193,7 @@ function collectGegevens() {
     p.peil[t] = r;
   }
   delete p.volume;
-  p.zaadhout_cm = rd($("g_zaad"), "zaadhout"); p.meting_lading_ton = rd($("g_voor"), "lading tijdens meting"); delete p.voorlading_ton; p.utank_ton = rd($("g_ut"), "U-tank inhoud");
+  p.zaadhout_cm = rd($("g_zaad"), "zaadhout"); p.meting_lading_ton = rd($("g_voor"), "lading tijdens meting"); delete p.voorlading_ton; p.utank_ton = rd($("g_ut"), "U-tank inhoud"); p.helling_graden_per_100t = rd($("g_hel"), "helling per 100 t");
   const getal = (x, wat, mag0) => { x = (x||"").trim().replace(",", "."); if (!x) return null; const v = Number(x); if (!isFinite(v)) { fouten.push(`${wat}: "${x}" is geen getal`); return null; } return v; };
   const regels = id => $(id).value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => l.split(/\t|;/).map(c => c.trim()));
   p.tanktabel = {};
@@ -1185,7 +1235,8 @@ function profielJs(p) {
   L.push("  },");
   L.push(`  ${pad("zaadhout_cm: " + js(p.zaadhout_cm) + ",", 33)}// hoogte zaadhout in de ruimen`);
   L.push(`  ${pad("meting_lading_ton: " + js(p.meting_lading_ton) + ",", 33)}// lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")`);
-  L.push(`  ${pad("utank_ton: " + js(p.utank_ton) + ",", 33)}// inhoud U-tank in ton bij max. niveau`, "");
+  L.push(`  ${pad("utank_ton: " + js(p.utank_ton) + ",", 33)}// inhoud U-tank in ton bij max. niveau`);
+  L.push(`  ${pad("helling_graden_per_100t: " + js(p.helling_graden_per_100t) + ",", 33)}// slagzij: gemeten helling (graden) bij 100 t meer aan één kant (uit een proef)`, "");
   L.push("  // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.", "  tanktabel: {");
   for (const t of ["T1","T2","T3"]) L.push(`    ${t}: [${((p.tanktabel||{})[t]||[]).map(ar).join(", ")}],`);
   L.push("  },", "", "  // Ballastplan per diepgang. Peilen in cm als [BB, SB]; ton = ballast + lading aan boord tijdens de meting;", "  // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].", "  ballastplan: [");

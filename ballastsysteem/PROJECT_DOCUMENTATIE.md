@@ -109,7 +109,9 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 - Het leidingnet is een graaf van knopen en leidingen (`EDGES`); elke leiding kan een afsluiter hebben. Zee, pompen, tanks, ejector-aansluitingen en overboord zijn eindpunten.
 - `solve()` zoekt in twee stappen (diepte-eerst): **persen** vanuit de pompen (alleen als buitenboord open is) naar tanks met ruimte en ejectors met Pers overboord open; daarna **zuigen** vanuit de actieve ejectors naar tanks met water. Debiet wordt per ruim verdeeld, niet per open leiding.
 - Peilen worden intern per tank als fractie van de inhoud bij max. niveau bijgehouden en via de tanktabel omgerekend naar cm en ton. Pompen en ejectors verplaatsen ton per seconde.
-- De geschatte diepgang wordt lineair geïnterpoleerd tussen de totalen in het ballastplan (gemeten inzinking buiten).
+- **Diepgang:** tussen twee metingen van het ballastplan lineair (ton → gemeten inzinking buiten). Buiten de metingen doorgetrokken met de gemiddelde tonnen per cm inzinking uit alle metingen (nu ≈ 11,9 t/cm; leeg schip dan ≈ 1,22 m).
+- **Trim** (achter min voor): trim = a + b1·W1 + b2·W2 + b3·W3, met W = ton in ruim 1, 2, 3. De vier getallen worden met de kleinste-kwadratenmethode passend gemaakt op de metingen in het ballastplan (nu: a = 16,3 cm, ruim 1 −0,066, ruim 2 −0,011, ruim 3 +0,054 cm per ton). Daarmee ook diepgang voor en achter (gemiddelde ∓ trim/2). Elke extra meting in het ballastplan maakt dit nauwkeuriger; metingen met alleen voor of alleen achter ballast helpen het meest.
+- **Slagzij:** het verschil in ton tussen BB en SB. In graden alleen als `helling_graden_per_100t` is ingevuld (uit een proef).
 - Coördinaten in eenheden van 2000 × 1414 (A3-verhouding), gelijk aan de originele Illustrator-tekening.
 
 ---
@@ -121,10 +123,13 @@ Na het invullen van het profiel in `bron/sim_template.html`: `python3 bron/build
 3. **Tanktabellen:** het aantal ton per cm neemt af naarmate het ruim voller is (ruim 1: 2,9 t/cm bij 70 cm, 1,0 t/cm boven 145 cm; ruim 2: 0,7 t/cm bij 245–250 cm). Bij een ruim met rechte wanden verwacht je ongeveer gelijke tonnen per cm. Controleren in het tabellenboek.
 4. **Ballastplan:** de binnen-meting bij 1,50 m is onvolledig (in de spreadsheet geeft dat inzinking 126,5 en trim −77) en bij 1,80 m ontbreekt hij; beide zijn leeg gelaten.
 5. **U-tank:** inhoud (t) en eventueel een tanktabel.
-6. **Controleblad** aan boord nalopen: plek en naam van elke afsluiter, DN-maten.
-7. **U-tank:** één vul/zuigleiding bevestigen; drainleiding aanwezig? waar? afsluiter?
-8. **Capaciteiten** (optioneel) voor echte tijden.
-9. Bladen naast de oude Illustrator-bladen leggen: ontbreekt er iets dat in v1.0 / v1.0.8 wel stond?
+6. **Lege diepgang en trim** (zonder ballast en lading) meten of opzoeken (ijkbrief): de simulator trekt nu door tot ≈ 1,22 m en 16 cm achterover, ongecontroleerd.
+7. **Trimmetingen** met alleen ballast voor of alleen achter, als extra regels in het ballastplan.
+8. **Helling:** proef met 100 t meer aan één kant, of GM en waterverplaatsing uit het stabiliteitsboekje.
+9. **Controleblad** aan boord nalopen: plek en naam van elke afsluiter, DN-maten.
+10. **U-tank:** één vul/zuigleiding bevestigen; drainleiding aanwezig? waar? afsluiter?
+11. **Capaciteiten** (optioneel) voor echte tijden.
+12. Bladen naast de oude Illustrator-bladen leggen: ontbreekt er iets dat in v1.0 / v1.0.8 wel stond?
 
 ## Historie
 
