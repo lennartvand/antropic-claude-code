@@ -1,2 +1,8 @@
 node_modules/
 __pycache__/
+
+# Lokaal houden: privé-repo’s en thuisnetwerkdetails (publieke repo)
+alle-tools/apex/
+alle-tools/zendamateur/repo/
+alle-tools/thuisnetwerk/
+alle-tools.zip

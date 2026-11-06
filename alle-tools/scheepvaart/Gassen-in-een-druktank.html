@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gassen in een druktank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#e6ecef;--surface:#f6f9fa;--ink:#102b3d;--ink2:#4b6474;--line:#b9c7cf;
+  --liquid:#1f6f8e;--vapor:#8cc7dc;--heat:#d9481c;--cold:#3388d6;
+  --ok:#2e8b4e;--warn:#c98200;--alarm:#c62828;
+  --propaan:#2169b0;--butaan:#8a55c0;--propyleen:#2a9466;--ammoniak:#cc3f86;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0d1a22;--surface:#13242e;--ink:#e2ebef;--ink2:#97adba;--line:#2a4352;
+    --liquid:#3698bc;--vapor:#2c6a80;--heat:#f06a3c;--cold:#5aa8f0;
+    --ok:#4cb06d;--warn:#e0a020;--alarm:#ef5350;
+    --propaan:#5a9fe6;--butaan:#b48be6;--propyleen:#4cc28e;--ammoniak:#eb6faa;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0d1a22;--surface:#13242e;--ink:#e2ebef;--ink2:#97adba;--line:#2a4352;
+  --liquid:#3698bc;--vapor:#2c6a80;--heat:#f06a3c;--cold:#5aa8f0;
+  --ok:#4cb06d;--warn:#e0a020;--alarm:#ef5350;
+  --propaan:#5a9fe6;--butaan:#b48be6;--propyleen:#4cc28e;--ammoniak:#eb6faa;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 Barlow,"Helvetica Neue",Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 14px 56px}
+h1{font:700 clamp(30px,6.5vw,46px)/1.04 "Barlow Condensed","Arial Narrow",sans-serif;margin:6px 0 8px}
+h2{font:700 30px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 6px}
+.lede{color:var(--ink2);margin:0 0 18px;max-width:60ch}
+.player{background:var(--surface);border:2px solid var(--ink);border-radius:8px;overflow:hidden}
+.stage{position:relative}
+canvas{display:block;width:100%;aspect-ratio:640/420;background:var(--surface)}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--surface) 82%,transparent);color:var(--ink);
+  font:700 26px "Barlow Condensed","Arial Narrow",sans-serif}
+.start[hidden]{display:none}
+.startbtn{min-height:56px;min-width:280px;padding:0 22px;border:0;border-radius:999px;background:var(--ink);color:var(--surface);font:700 22px "Barlow Condensed","Arial Narrow",sans-serif;cursor:pointer}
+.chapsep{flex:0 0 auto;align-self:center;font:600 15px "Barlow Condensed",sans-serif;color:var(--ink2);padding:0 4px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px}
+.grid label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+.grid .lt{display:block;white-space:nowrap}
+.grid .lt span{font-weight:400;color:var(--ink2)}
+.grid input{height:48px;font:600 19px Barlow,sans-serif;padding:0 10px;border:2px solid var(--ink);border-radius:6px;background:var(--paper);color:var(--ink);width:100%}
+.start .disc{width:84px;height:84px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-size:34px;padding-left:6px}
+.start small{font:500 16px Barlow,sans-serif;color:var(--ink2)}
+.caption{min-height:8.4em;padding:12px 16px 10px;border-top:2px solid var(--ink)}
+.scene-title{font:600 17px "Barlow Condensed","Arial Narrow",sans-serif;color:var(--ink2)}
+.cap{font-size:19px;line-height:1.45;margin:4px 0 0;max-width:62ch}
+.controls{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.btn{flex:0 0 auto;min-width:48px;height:48px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);border-radius:8px;cursor:pointer;font:700 18px Barlow,sans-serif}
+.btn.main{background:var(--ink);color:var(--surface);min-width:58px}
+.time{font:500 15px Barlow,sans-serif;color:var(--ink2);min-width:84px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{flex:1;min-width:0;accent-color:var(--liquid);height:34px}
+.chapters{display:flex;gap:6px;overflow-x:auto;padding:0 12px 12px;scrollbar-width:none}
+.chap{flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--ink);padding:8px 13px;border-radius:999px;cursor:pointer;font:500 15px Barlow,sans-serif}
+.chap[aria-current="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--cold);outline-offset:2px}
+
+.play{margin-top:36px;background:var(--surface);border:2px solid var(--ink);border-radius:8px;padding:18px 16px 20px}
+.play p{margin:0 0 14px;max-width:62ch;color:var(--ink2)}
+.gaschips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.gaschip{min-height:46px;padding:8px 16px;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font:600 17px Barlow,sans-serif;display:flex;align-items:center;gap:8px}
+.gaschip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.gaschip[aria-checked="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 -4px 0 var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:baseline;font-weight:600}
+.row output{font:700 22px "Barlow Condensed",sans-serif}
+#tIn{width:100%}
+.result{margin:16px 0 12px;padding:14px 16px;border-left:10px solid var(--ok);background:var(--paper);border-radius:4px}
+.result .big{font:700 46px/1 "Barlow Condensed","Arial Narrow",sans-serif}
+.result .st{margin-top:6px;font-weight:600}
+details{border-top:1px solid var(--line);padding-top:12px;margin-top:6px}
+summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}
+.calc{font-size:16px;line-height:1.6}
+.calc table{border-collapse:collapse;width:100%;margin:8px 0 14px}
+.calc td{padding:5px 0;border-bottom:1px solid var(--line)}
+.calc td:last-child{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.calc label{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-weight:600}
+.calc input[type=number]{width:110px;height:44px;font:600 18px Barlow,sans-serif;padding:0 10px;border:2px solid var(--ink);border-radius:6px;background:var(--paper);color:var(--ink)}
+.note{font-size:14px;color:var(--ink2);margin-top:16px}
+@media (max-width:520px){.cap{font-size:17.5px}.time{display:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Gassen in een druktank</h1>
+  <p class="lede">Deel 1: koken, verdampen en condenseren van propaan, butaan, propyleen en ammoniak bij laden, lossen en in de leidingen. Deel 2: de gaswetten, en waarom ze niet gelden zolang er vloeistof in de tank zit. Dertien korte scènes, samen ruim 7 minuten.</p>
+
+  <div class="player">
+    <div class="stage">
+      <canvas id="cv" role="img" aria-label="Animatie"></canvas>
+      <div class="start" id="startBtn"><button class="startbtn" id="s1">▶ Deel 1: koken en condenseren</button><button class="startbtn" id="s2">▶ Deel 2: gaswetten</button><small>pauzeren en terugspoelen kan altijd</small></div>
+    </div>
+    <div class="caption">
+      <div class="scene-title" id="sceneTitle"></div>
+      <p class="cap" id="cap" aria-live="polite"></p>
+    </div>
+    <div class="controls">
+      <button class="btn" id="prevBtn" aria-label="Vorige scène">⏮</button>
+      <button class="btn main" id="playBtn" aria-label="Afspelen">▶</button>
+      <button class="btn" id="nextBtn" aria-label="Volgende scène">⏭</button>
+      <input type="range" id="scrub" min="0" step="0.1" value="0" aria-label="Tijdlijn">
+      <span class="time" id="time">0:00</span>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+
+  <section class="play" aria-labelledby="playH">
+    <h2 id="playH">Zelf proberen</h2>
+    <p>Zolang er vloeistof in de tank zit, is de druk gelijk aan de dampspanning bij de temperatuur van de lading.</p>
+    <div class="gaschips" role="radiogroup" aria-label="Lading" id="gaschips"></div>
+    <div class="row"><label for="tIn">Temperatuur lading</label><output id="tOut">15 °C</output></div>
+    <input type="range" id="tIn" min="-30" max="50" step="1" value="15">
+    <div class="result" id="res">
+      <div class="big" id="pOut"></div>
+      <div class="st" id="st"></div>
+    </div>
+    <details>
+      <summary>Toon berekening</summary>
+      <div class="calc">
+        <table><tbody id="calcBody"></tbody></table>
+        <label for="pIn">Tankdruk in bar(o) <input type="number" id="pIn" step="0.1" value="4"></label>
+        <p id="inv" style="margin:8px 0 0"></p>
+      </div>
+    </details>
+    <p class="note">Waarden voor zuivere stoffen, afgerond. Handelspropaan en -butaan zijn mengsels en wijken iets af. Veiligheidsklep: 15,8 bar(o), maximale vullingsgraad 91%.</p>
+  </section>
+
+  <section class="play" aria-labelledby="gwH">
+    <h2 id="gwH">Gaswet-rekenaar</h2>
+    <p>Voor damp of stikstof zonder vloeistof in de tank. Vul de begintoestand in en wat er verandert.</p>
+    <div class="gaschips" role="radiogroup" aria-label="Gas" id="gaschips2"></div>
+    <div class="grid">
+      <label><span class="lt">Druk nu <span>bar(o)</span></span><input type="number" id="g_p1" value="2" step="0.1" inputmode="decimal"></label>
+      <label><span class="lt">Temperatuur nu <span>°C</span></span><input type="number" id="g_t1" value="15" step="1" inputmode="decimal"></label>
+      <label><span class="lt">Volume nu <span>m³</span></span><input type="number" id="g_v1" value="430" step="1" inputmode="decimal"></label>
+      <label><span class="lt">Temperatuur straks <span>°C</span></span><input type="number" id="g_t2" value="45" step="1" inputmode="decimal"></label>
+      <label><span class="lt">Volume straks <span>m³</span></span><input type="number" id="g_v2" value="430" step="1" inputmode="decimal"></label>
+    </div>
+    <div class="result" id="gres"><div class="big" id="gOut"></div><div class="st" id="gst"></div></div>
+    <details>
+      <summary>Toon berekening</summary>
+      <div class="calc"><table><tbody id="gcalc"></tbody></table></div>
+    </details>
+  </section>
+</main>
+
+<script>
+/* ---------- data ---------- */
+const VW=640,VH=420,ATM=1.013,VALVE=15.8;
+const TS=[-50,-40,-30,-20,-10,0,10,20,30,40,50];
+const GAS=[
+ {id:'propaan',name:'Propaan',P:[0.70,1.11,1.68,2.44,3.45,4.74,6.36,8.36,10.79,13.69,17.13],bp:-42.1,L:426,rel:1.55,rho:507},
+ {id:'butaan',name:'Butaan',P:[0.10,0.18,0.29,0.45,0.69,1.03,1.48,2.08,2.83,3.79,4.96],bp:-0.5,L:386,rel:2.0,rho:584},
+ {id:'propyleen',name:'Propyleen',P:[0.89,1.40,2.12,3.07,4.31,5.86,7.77,10.1,12.9,16.4,20.5],bp:-47.6,L:438,rel:1.45,rho:522},
+ {id:'ammoniak',name:'Ammoniak',P:[0.41,0.72,1.19,1.90,2.91,4.29,6.15,8.57,11.67,15.55,20.33],bp:-33.3,L:1371,rel:0.59,rho:618}
+];
+function idx(T){return Math.min(9,Math.max(0,Math.floor((T+50)/10)))}
+function pAbs(g,T){T=Math.max(-50,Math.min(50,T));const i=idx(T),f=(T-TS[i])/10;return Math.exp(Math.log(g.P[i])*(1-f)+Math.log(g.P[i+1])*f)}
+function pG(g,T){return pAbs(g,T)-ATM}
+function tAt(g,Pa){if(Pa<=g.P[0])return -Infinity;if(Pa>=g.P[10])return Infinity;
+  for(let i=0;i<10;i++){if(Pa<=g.P[i+1]){const f=(Math.log(Pa)-Math.log(g.P[i]))/(Math.log(g.P[i+1])-Math.log(g.P[i]));return TS[i]+10*f}}}
+const nf=(x,d=1)=>x.toFixed(d).replace('.',',').replace('-','−');
+
+/* ---------- canvas ---------- */
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let S=1,C={};
+function readColors(){const s=getComputedStyle(document.documentElement);
+ ['paper','surface','ink','ink2','line','liquid','vapor','heat','cold','ok','warn','alarm','propaan','butaan','propyleen','ammoniak'].forEach(k=>C[k]=s.getPropertyValue('--'+k).trim())}
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
+function resize(){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=Math.round(r.width*d);cv.height=Math.round(r.width*VH/VW*d);S=cv.width/VW}
+new ResizeObserver(resize).observe(cv);resize();
+
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const sm=x=>{x=clamp(x);return x*x*(3-2*x)};
+const seg=(t,a,b)=>sm((t-a)/(b-a));
+const lerp=(a,b,f)=>a+(b-a)*f;
+const rand=(a,b)=>a+Math.random()*(b-a);
+const F=(w,s)=>`${w} ${s}px "Barlow Condensed","Arial Narrow",sans-serif`;
+function mix(a,b,f){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const A=p(a),B=p(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*f)).join(',')+')'}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function txt(s,x,y,o={}){ctx.font=F(o.w||600,o.size||18);ctx.fillStyle=o.color||C.ink;ctx.textAlign=o.align||'left';ctx.textBaseline=o.base||'alphabetic';ctx.fillText(s,x,y)}
+function line(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function poly(pts){ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1])}
+function pipe(pts,o={}){const w=o.w||12;ctx.lineJoin='round';ctx.lineCap='round';
+ poly(pts);ctx.lineWidth=w;ctx.strokeStyle=C.ink;ctx.stroke();
+ poly(pts);ctx.lineWidth=w-5;ctx.strokeStyle=o.fill||C.surface;ctx.stroke();
+ if(o.flow){poly(pts);ctx.setLineDash([8,10]);ctx.lineDashOffset=-(o.t||0)*40;ctx.lineWidth=w-7;ctx.strokeStyle=o.col||C.vapor;ctx.stroke();ctx.setLineDash([])}}
+function valve(x,y,open,vertical){ctx.save();ctx.translate(x,y);if(vertical)ctx.rotate(Math.PI/2);
+ ctx.beginPath();ctx.moveTo(-11,-10);ctx.lineTo(11,10);ctx.lineTo(11,-10);ctx.lineTo(-11,10);ctx.closePath();
+ ctx.fillStyle=open?C.ok:C.alarm;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=C.ink;ctx.stroke();ctx.restore()}
+function badge(x,y,s,col){ctx.font=F(700,18);const w=ctx.measureText(s).width+20;rr(x-w/2,y-15,w,30,6);ctx.fillStyle=col;ctx.fill();txt(s,x,y+1,{size:18,w:700,color:'#fff',align:'center',base:'middle'})}
+function gauge(cx,cy,r,v,label,eq){
+ const a0=Math.PI*.75,a1=Math.PI*2.25,MAX=20,A=x=>a0+(a1-a0)*clamp(x/MAX);
+ ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fillStyle=C.surface;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=C.ink;ctx.stroke();
+ ctx.beginPath();ctx.arc(cx,cy,r-9,A(VALVE),a1);ctx.lineWidth=7;ctx.strokeStyle=C.alarm;ctx.stroke();
+ ctx.strokeStyle=C.ink;ctx.lineWidth=2;
+ for(let i=0;i<=MAX;i+=5){const a=A(i);line(cx+Math.cos(a)*(r-4),cy+Math.sin(a)*(r-4),cx+Math.cos(a)*(r-15),cy+Math.sin(a)*(r-15))}
+ if(eq!=null){const a=A(eq);ctx.strokeStyle=C.cold;ctx.lineWidth=4;line(cx+Math.cos(a)*(r-2),cy+Math.sin(a)*(r-2),cx+Math.cos(a)*(r-18),cy+Math.sin(a)*(r-18))}
+ const a=A(v);ctx.strokeStyle=C.heat;ctx.lineWidth=3.5;line(cx,cy,cx+Math.cos(a)*(r-12),cy+Math.sin(a)*(r-12));
+ ctx.beginPath();ctx.arc(cx,cy,5,0,7);ctx.fillStyle=C.ink;ctx.fill();
+ txt(label||'druk',cx,cy-r-10,{size:17,w:500,color:C.ink2,align:'center'});
+ txt(nf(v)+' bar(o)',cx,cy+r+24,{size:22,align:'center'});
+ if(eq!=null)txt('dampspanning '+nf(eq),cx,cy+r+46,{size:16,w:500,color:C.cold,align:'center'});
+}
+function thermo(x,y,h,T){const f=clamp((T+10)/40);const col=mix(C.cold,C.heat,f);
+ rr(x-7,y,14,h,7);ctx.fillStyle=C.surface;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=C.ink;ctx.stroke();
+ const fh=(h-10)*clamp((T+20)/60);ctx.fillStyle=col;ctx.fillRect(x-3.5,y+h-fh,7,fh);
+ ctx.beginPath();ctx.arc(x,y+h+8,12,0,7);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=C.ink;ctx.stroke();
+ txt(nf(T,0)+' °C',x+22,y+h+10,{size:22,base:'middle'});txt('lading',x+22,y+h-16,{size:16,w:500,color:C.ink2,base:'middle'})}
+
+/* ---------- molecuul-simulatie ---------- */
+class Sim{
+ constructor(){this.p=[];this.b=[];this.fx=[];this.ea=0;this.ba=0;this.ia=0}
+ mk(x,y,old){const a=rand(0,6.283),s=rand(70,130);return{x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,age:old?9:0}}
+ reset(box,L,n){this.p=[];this.b=[];this.fx=[];for(let i=0;i<n;i++)this.p.push(this.mk(rand(box.x0,box.x1),rand(box.y0,L-4),true))}
+ step(dt,box,L,o){
+  if(dt<=0)return;
+  this.ea+=o.evap*dt;
+  while(this.ea>=1){this.ea--;if(this.p.length<260){const q=this.mk(rand(box.x0,box.x1),L-3,false);q.vy=-Math.abs(q.vy)-30;this.p.push(q)}}
+  if(o.inj){this.ia+=o.inj.rate*dt;while(this.ia>=1){this.ia--;const q=this.mk(o.inj.x+rand(-6,6),box.y0+3,false);q.vy=Math.abs(q.vy)+20;q.inj=1;this.p.push(q)}}
+  if(o.boil){this.ba+=o.boil*dt;while(this.ba>=1){this.ba--;if(box.yb-L>30)this.b.push({x:rand(box.x0+10,box.x1-10),y:rand(L+18,box.yb-6),r:rand(2,4),v:rand(50,100)})}}
+  for(const b of this.b){b.y-=b.v*dt;b.r+=dt*1.6}
+  this.b=this.b.filter(b=>{if(b.y<=L){if(this.p.length<280){const q=this.mk(b.x,L-3,false);q.vy=-Math.abs(q.vy)-30;this.p.push(q)}return false}return true});
+  const keep=[];
+  for(const q of this.p){q.age+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;
+   if(q.x<box.x0){q.x=box.x0;q.vx=Math.abs(q.vx)}if(q.x>box.x1){q.x=box.x1;q.vx=-Math.abs(q.vx)}
+   if(q.y<box.y0){if(o.out&&Math.abs(q.x-o.out.x)<20&&Math.random()<o.out.p)continue;q.y=box.y0;q.vy=Math.abs(q.vy)}
+   if(q.y>L-2){if(q.y>L+6||Math.random()<o.cond){this.fx.push({x:q.x,y:L,a:0});continue}q.y=L-2;q.vy=-Math.abs(q.vy)}
+   keep.push(q)}
+  this.p=keep;
+  for(const f of this.fx)f.a+=dt;this.fx=this.fx.filter(f=>f.a<.6);
+ }
+ draw(hl){
+  ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.85)';
+  for(const b of this.b){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.stroke()}
+  for(const f of this.fx){const k=f.a/.6;ctx.beginPath();ctx.arc(f.x,f.y,3+k*(hl===2?15:9),0,7);ctx.globalAlpha=1-k;ctx.strokeStyle=C.cold;ctx.lineWidth=hl===2?3:2;ctx.stroke()}
+  ctx.globalAlpha=1;
+  for(const q of this.p){const n=q.age<.9;ctx.beginPath();ctx.arc(q.x,q.y,n&&hl===1?5:3.2,0,7);
+   ctx.fillStyle=q.inj&&q.age<1.6?C.cold:(n?C.heat:C.ink);ctx.globalAlpha=n?1:.72;ctx.fill()}
+  ctx.globalAlpha=1;
+ }
+}
+const eqN=(e,c,H)=>Math.round(e*2*H/(c*100));
+
+/* tank */
+const G={x:28,y:120,w:420,h:210};G.box={x0:G.x+16,x1:G.x+G.w-16,y0:G.y+10,yb:G.y+G.h-8};
+const lvY=f=>G.y+G.h-8-(G.h-18)*f;
+function drawTank(f,sim,t,hl,inside){
+ const L=lvY(f);
+ ctx.save();rr(G.x,G.y,G.w,G.h,48);ctx.fillStyle=C.surface;ctx.fill();ctx.clip();
+ ctx.globalAlpha=.32;ctx.fillStyle=C.vapor;ctx.fillRect(G.x,G.y,G.w,L-G.y);ctx.globalAlpha=1;
+ ctx.fillStyle=C.liquid;ctx.beginPath();ctx.moveTo(G.x,L);
+ for(let x=G.x;x<=G.x+G.w;x+=10)ctx.lineTo(x,L+Math.sin(x*.05+t*2)*1.5);
+ ctx.lineTo(G.x+G.w,G.y+G.h);ctx.lineTo(G.x,G.y+G.h);ctx.closePath();ctx.fill();
+ if(inside)inside(L);
+ sim.draw(hl);
+ ctx.restore();
+ rr(G.x,G.y,G.w,G.h,48);ctx.lineWidth=4;ctx.strokeStyle=C.ink;ctx.stroke();
+ return L;
+}
+const GX=548,GY=172,GR=56;
+
+/* ---------- scènes ---------- */
+const PROP=GAS[0];
+const scenes=[
+{ title:'Evenwicht in de tank', short:'Evenwicht', dur:30,
+  caps:[[0,'Een druktank met propaan. Onderin vloeistof, bovenin damp. Er zit geen lucht in.'],
+        [5,'Aan het oppervlak ontsnappen voortdurend moleculen uit de vloeistof. Dat is verdampen (oranje).'],
+        [10,'Tegelijk slaan moleculen uit de damp terug in de vloeistof. Dat is condenseren (blauwe ringen).'],
+        [15,'Gaan er evenveel weg als terug, dan is de tank in evenwicht. De druk die dan staat heet de dampspanning.'],
+        [21,'Die dampspanning hangt alleen af van de temperatuur van de vloeistof. Kijk: de vulling verandert, de druk niet.']],
+  sim:new Sim(),
+  lvl(t){return t<21?.5:.5+.28*Math.sin((t-21)*.7)},
+  reset(t){const L=lvY(this.lvl(t));this.sim.reset(G.box,L,eqN(26,.5,L-G.box.y0))},
+  draw(t,dt){const f=this.lvl(t),L=lvY(f);
+   this.sim.step(dt,G.box,L,{evap:26,cond:.5});
+   const hl=t>=5&&t<10?1:(t>=10&&t<15?2:0);
+   drawTank(f,this.sim,t,hl);
+   txt('Propaan',G.x,G.y-16,{size:24});
+   txt('vulling '+Math.round(f*100)+'%',G.x+G.w,G.y-16,{size:20,w:500,color:t>=21?C.ink:C.ink2,align:'right'});
+   gauge(GX,GY,GR,pG(PROP,15),'druk');thermo(530,290,80,15);
+   ctx.beginPath();ctx.arc(G.x+14,366,5,0,7);ctx.fillStyle=C.heat;ctx.fill();
+   txt('verdampt',G.x+26,366,{size:18,w:500,base:'middle'});
+   ctx.beginPath();ctx.arc(G.x+130,366,7,0,7);ctx.strokeStyle=C.cold;ctx.lineWidth=2.5;ctx.stroke();
+   txt('condenseert',G.x+144,366,{size:18,w:500,base:'middle'});
+   ctx.beginPath();ctx.arc(G.x+262,366,3.2,0,7);ctx.fillStyle=C.ink;ctx.fill();
+   txt('damp',G.x+274,366,{size:18,w:500,base:'middle'});
+  }},
+{ title:'Dampspanningscurves', short:'Curves', dur:30,
+  caps:[[0,'Elk gas heeft zijn eigen dampspanningscurve. Hoe warmer de lading, hoe hoger de druk.'],
+        [7,'Waar een curve 0 bar(o) raakt, ligt het kookpunt bij atmosferische druk. Propyleen −48 °C, propaan −42 °C, ammoniak −33 °C, butaan net onder 0 °C.'],
+        [15,'Bij 15 °C staat butaan op 0,7 bar(o), propaan op 6,3, ammoniak op 6,2 en propyleen op 7,8.'],
+        [22,'De rode lijn is de openingsdruk van de veiligheidskleppen: 15,8 bar(o). Propyleen haalt die rond 41 °C, ammoniak rond 43 °C, propaan rond 49 °C.']],
+  draw(t){
+   const x0=64,x1=620,y0=24,y1=360,X=T=>x0+(T+50)/100*(x1-x0),Y=P=>y1-P/22*(y1-y0);
+   ctx.strokeStyle=C.line;ctx.lineWidth=1;
+   for(let T=-50;T<=50;T+=10)line(X(T),y0,X(T),y1);
+   for(let P=0;P<=20;P+=5)line(x0,Y(P),x1,Y(P));
+   ctx.strokeStyle=C.ink;ctx.lineWidth=2;line(x0,y1,x1,y1);line(x0,y0,x0,y1);
+   for(const T of [-40,-20,0,20,40])txt(nf(T,0),X(T),y1+24,{size:17,w:500,color:C.ink2,align:'center'});
+   txt('°C',x1,y1+24,{size:17,align:'right'});
+   for(const P of [5,10,15,20])txt(String(P),x0-8,Y(P),{size:17,w:500,color:C.ink2,align:'right',base:'middle'});
+   txt('bar(o)',6,y0-6,{size:16,w:500,color:C.ink2,base:'middle'});
+   if(t>=22){ctx.globalAlpha=seg(t,22,23.5);ctx.strokeStyle=C.alarm;ctx.lineWidth=2.5;ctx.setLineDash([9,7]);line(x0,Y(VALVE),x1,Y(VALVE));ctx.setLineDash([]);
+     txt('veiligheidsklep 15,8',X(-20),Y(VALVE)-9,{size:18,color:C.alarm});ctx.globalAlpha=1}
+   const rev=-50+100*seg(t,.5,6.5);
+   ctx.save();ctx.beginPath();ctx.rect(x0,y0-4,x1-x0,y1-y0+4);ctx.clip();
+   for(const g of GAS){ctx.beginPath();for(let T=-50;T<=rev;T+=1){const p=pG(g,T);T===-50?ctx.moveTo(X(T),Y(p)):ctx.lineTo(X(T),Y(p))}
+     ctx.lineWidth=3.5;ctx.strokeStyle=C[g.id];ctx.lineJoin='round';ctx.stroke()}
+   ctx.restore();
+   if(t>=7){const a=seg(t,7,8)*(1-.55*seg(t,15,16));ctx.globalAlpha=a;
+     const ord=[2,0,3];ord.forEach((gi,k)=>{const g=GAS[gi];ctx.beginPath();ctx.arc(X(g.bp),y1,6,0,7);ctx.fillStyle=C[g.id];ctx.fill();
+       txt(nf(g.bp,0)+'°',X(g.bp),y1-16-k*22,{size:18,color:C[g.id],align:'center'})});
+     const b=GAS[1];ctx.beginPath();ctx.arc(X(b.bp),y1,6,0,7);ctx.fillStyle=C.butaan;ctx.fill();txt('−0,5°',X(b.bp),y1-16,{size:18,color:C.butaan,align:'center'});
+     ctx.globalAlpha=1}
+   if(t>=15){ctx.globalAlpha=seg(t,15,16);ctx.strokeStyle=C.ink2;ctx.lineWidth=1.5;ctx.setLineDash([5,5]);line(X(15),y0,X(15),y1);ctx.setLineDash([]);
+     txt('15 °C',X(15)+6,y1-8,{size:17,color:C.ink2});
+     for(const g of GAS){ctx.beginPath();ctx.arc(X(15),Y(pG(g,15)),6,0,7);ctx.fillStyle=C[g.id];ctx.fill();ctx.strokeStyle=C.surface;ctx.lineWidth=2;ctx.stroke()}
+     ctx.globalAlpha=1}
+   if(t>=22){ctx.globalAlpha=seg(t,23,24);for(const g of GAS){const Tc=tAt(g,VALVE+ATM);if(Tc<50){ctx.beginPath();ctx.arc(X(Tc),Y(VALVE),8,0,7);ctx.strokeStyle=C[g.id];ctx.lineWidth=3;ctx.stroke()}}ctx.globalAlpha=1}
+   rr(x0+10,y0+8,190,112,6);ctx.fillStyle=C.surface;ctx.globalAlpha=.92;ctx.fill();ctx.globalAlpha=1;
+   GAS.forEach((g,i)=>{const y=y0+28+i*26;ctx.strokeStyle=C[g.id];ctx.lineWidth=4;line(x0+20,y,x0+42,y);
+     txt(g.name,x0+50,y,{size:19,base:'middle'});
+     if(t>=15){ctx.globalAlpha=seg(t,15,16);txt(nf(pG(g,15)),x0+190,y,{size:19,align:'right',base:'middle',color:C[g.id]});ctx.globalAlpha=1}});
+  }},
+{ title:'Laden', short:'Laden', dur:32,
+  caps:[[0,'Laden: vloeistof komt de tank in, de dampruimte wordt kleiner.'],
+        [6,'De damp wordt samengeperst. De druk loopt op boven de dampspanning, dus condenseert er meer damp dan er verdampt.'],
+        [13,'Bij condenseren komt warmte vrij. De lading warmt iets op en daarmee stijgt ook de dampspanning.'],
+        [20,'Daarom gaat de damp via de dampretour terug naar de wal, of haalt de compressor hem weg. Zo blijft de druk beheersbaar.'],
+        [26,'Stoppen bij 91%. De rest is ruimte voor uitzetting als de lading later warmer wordt.']],
+  sim:new Sim(),
+  f(t){return .2+.71*sm(t/26)},
+  T(t){return 15+1.2*sm(t/20)},
+  P(t){const top=6.28+2.0;return t<20?6.28+2.0*sm(t/20):lerp(top,pG(PROP,16.2)+.3,sm((t-20)/6))},
+  reset(t){const L=lvY(this.f(t));this.sim.reset(G.box,L,eqN(26*this.P(t)/6.28,.5,L-G.box.y0))},
+  draw(t,dt){const f=this.f(t),L=lvY(f),P=this.P(t),T=this.T(t),ret=t>=20;
+   this.sim.step(dt,G.box,L,{evap:26*P/6.28,cond:.5,out:ret?{x:340,p:.8}:null});
+   drawTank(f,this.sim,t,0,L=>{ctx.strokeStyle=C.ink;ctx.lineWidth=6;line(130,G.y,130,G.y+G.h-16);
+     const y91=lvY(.91);ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.strokeStyle=C.alarm;line(G.x,y91,G.x+G.w,y91);ctx.setLineDash([]);
+     txt('91%',G.x+G.w-56,y91+20,{size:18,color:C.alarm})});
+   pipe([[0,70],[130,70],[130,G.y]],{flow:t<26,col:C.liquid,t});
+   pipe([[340,G.y],[340,70],[640,70]],{flow:ret,col:C.vapor,t});
+   valve(420,70,ret);
+   txt('vloeistof van de wal',6,52,{size:18,w:500,color:C.ink2});
+   txt('dampretour naar de wal',632,52,{size:18,w:500,color:C.ink2,align:'right'});
+   txt('vulling '+Math.round(f*100)+'%',G.x,G.y+G.h+34,{size:22});
+   gauge(GX,GY,GR,P,'druk',pG(PROP,T));thermo(530,300,70,T);
+  }},
+{ title:'Lossen', short:'Lossen', dur:34,
+  caps:[[0,'Lossen: de diepwellpomp haalt vloeistof weg en de dampruimte wordt groter.'],
+        [6,'De druk zakt onder de dampspanning. De vloeistof gaat koken: bellen in de hele vloeistof, niet alleen aan het oppervlak.'],
+        [13,'Koken kost warmte. Die haalt de vloeistof uit zichzelf, dus de lading koelt af.'],
+        [19,'Koudere lading betekent een lagere dampspanning. De druk zakt verder en de pomp kan gaan caviteren.'],
+        [26,'Daarom persen we damp terug in de tank, van de wal of met de compressor. De druk blijft op peil en de lading hoeft niet zelf te verdampen.']],
+  sim:new Sim(),
+  f(t){return .85-.70*sm(t/31)},
+  T(t){return t<6?15:(t<28?lerp(15,3,sm((t-6)/20)):lerp(3,4,sm((t-28)/5)))},
+  P(t){return t<6?lerp(6.28,5.2,sm(t/6)):(t<26?lerp(5.2,2.6,sm((t-6)/16)):lerp(2.6,4.6,sm((t-26)/4)))},
+  reset(t){const L=lvY(this.f(t));this.sim.reset(G.box,L,eqN(26*this.P(t)/6.28,.5,L-G.box.y0))},
+  draw(t,dt){const f=this.f(t),L=lvY(f),P=this.P(t),T=this.T(t),inj=t>=26;
+   this.sim.step(dt,G.box,L,{evap:26*P/6.28,cond:inj?.6:.5,boil:t>=6&&t<27?45:0,inj:inj?{x:130,rate:30}:null});
+   drawTank(f,this.sim,t,0,()=>{ctx.strokeStyle=C.ink;ctx.lineWidth=6;line(300,G.y,300,G.y+G.h-26);
+     rr(286,G.y+G.h-32,28,22,4);ctx.fillStyle=C.ink;ctx.fill()});
+   pipe([[300,G.y],[300,70],[640,70]],{flow:t<31,col:C.liquid,t});
+   pipe([[0,70],[130,70],[130,G.y]],{flow:inj,col:C.vapor,t});
+   valve(70,70,inj);
+   txt('damp van wal of compressor',6,52,{size:18,w:500,color:C.ink2});
+   txt('vloeistof naar de wal',632,52,{size:18,w:500,color:C.ink2,align:'right'});
+   txt('vulling '+Math.round(f*100)+'%',G.x,G.y+G.h+34,{size:22});
+   if(t>=19&&t<26)badge(300,G.y+G.h+30,'pomp caviteert',C.alarm);
+   gauge(GX,GY,GR,P,'druk',pG(PROP,T));thermo(530,300,70,T);
+  }},
+{ title:'Condensatie in leidingen', short:'Leidingen', dur:32,
+  caps:[[0,'Damp die door een koudere leiding gaat, koelt af onder zijn condensatietemperatuur en wordt weer vloeistof.'],
+        [6,'Die vloeistof loopt naar het laagste punt van de leiding: in de dampretour, of verder naar de compressor.'],
+        [12,'Een compressor kan vloeistof niet samenpersen: vloeistofslag. Daarom een vloeistofafscheider vóór de compressor en dampleidingen laten leeglopen.'],
+        [19,'Het omgekeerde is net zo gevaarlijk: vloeistof opgesloten tussen twee dichte kleppen.'],
+        [24,'Warmt die leiding op, dan zet de vloeistof uit zonder ruimte. De druk schiet veel harder omhoog dan in een tank met dampruimte. Sluit nooit een volle vloeistofleiding op.']],
+  path:[[150,100],[285,100],[312,150],[452,150],[478,100],[505,100]],
+  reset(){this.tok=[];this.drops=[];this.acc=0;
+   this.lens=[];this.len=0;for(let i=1;i<this.path.length;i++){const a=this.path[i-1],b=this.path[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);this.lens.push(l);this.len+=l}},
+  pos(s){let i=0;while(i<this.lens.length-1&&s>this.lens[i]){s-=this.lens[i];i++}const a=this.path[i],b=this.path[i+1],f=clamp(s/this.lens[i]);return[lerp(a[0],b[0],f),lerp(a[1],b[1],f)]},
+  draw(t,dt){
+   if(!this.lens)this.reset();
+   const puddle=t<19?9*seg(t,3,14):9, upA=t>=19?lerp(1,.28,seg(t,19,20)):1;
+   ctx.globalAlpha=upA;
+   rr(-80,100,230,190,40);ctx.fillStyle=C.surface;ctx.fill();
+   ctx.save();rr(-80,100,230,190,40);ctx.clip();ctx.fillStyle=C.liquid;ctx.fillRect(-80,190,240,110);ctx.globalAlpha=upA*.32;ctx.fillStyle=C.vapor;ctx.fillRect(-80,100,240,90);ctx.restore();
+   ctx.globalAlpha=upA;rr(-80,100,230,190,40);ctx.lineWidth=4;ctx.strokeStyle=C.ink;ctx.stroke();
+   txt('tank, ±15 °C',10,222+0,{size:18,color:'#fff'});
+   ctx.globalAlpha=upA*.22;ctx.fillStyle=C.cold;ctx.fillRect(298,118,170,60);ctx.globalAlpha=upA;
+   txt('koude leiding',383,200,{size:18,color:C.cold,align:'center'});
+   pipe(this.path,{w:22});
+   ctx.fillStyle=C.liquid;ctx.fillRect(316,158-puddle,132,puddle);
+   pipe([[539,100],[552,100]],{w:16});
+   rr(505,62,34,86,10);ctx.fillStyle=C.surface;ctx.fill();
+   const sl=26*seg(t,10,16);ctx.fillStyle=C.liquid;ctx.fillRect(507,146-sl,30,sl);
+   rr(505,62,34,86,10);ctx.lineWidth=3;ctx.strokeStyle=C.ink;ctx.stroke();
+   rr(552,74,64,52,6);ctx.fillStyle=C.paper;ctx.fill();ctx.stroke();
+   ctx.beginPath();ctx.arc(584,100,13,0,7);ctx.stroke();line(584,100,593,91);
+   txt('compressor',584,62,{size:17,align:'center'});
+   txt('afscheider',522,170,{size:17,align:'center'});
+   if(dt>0&&t<19){this.acc+=dt*7;while(this.acc>=1){this.acc--;this.tok.push({s:0})}}
+   const keep=[];
+   for(const k of this.tok){k.s+=70*dt;if(k.s>=this.len)continue;const[x,y]=this.pos(k.s);
+     if(x>318&&x<446&&y>145&&dt>0&&Math.random()<1.6*dt){this.drops.push({x,y,v:0});continue}
+     keep.push(k);ctx.beginPath();ctx.arc(x,y,3.2,0,7);ctx.fillStyle=C.ink;ctx.fill()}
+   this.tok=keep;
+   this.drops=this.drops.filter(d=>{d.v+=300*dt;d.y+=d.v*dt;if(d.y>=158-puddle)return false;
+     ctx.beginPath();ctx.arc(d.x,d.y,3.6,0,7);ctx.fillStyle=C.liquid;ctx.fill();return true});
+   if(t>=12&&t<19)badge(560,200,'geen vloeistof in!',C.alarm);
+   ctx.globalAlpha=1;
+   if(t>=19){const a=seg(t,19,20.2);ctx.globalAlpha=a;
+     txt('Vloeistofleiding, beide kleppen dicht',40,262,{size:20});
+     pipe([[40,312],[600,312]],{w:22,fill:C.liquid});
+     valve(160,312,false);valve(480,312,false);
+     const sa=seg(t,22,23);if(sa>0){ctx.globalAlpha=a*sa;const sx=430,sy=258;ctx.fillStyle=C.warn;ctx.beginPath();ctx.arc(sx,sy,11,0,7);ctx.fill();
+       ctx.strokeStyle=C.warn;ctx.lineWidth=2.5;for(let i=0;i<8;i++){const an=i*Math.PI/4+t*.6;line(sx+Math.cos(an)*15,sy+Math.sin(an)*15,sx+Math.cos(an)*21,sy+Math.sin(an)*21)}
+       txt('opwarming',sx+28,sy+1,{size:17,w:500,color:C.ink2,base:'middle'});ctx.globalAlpha=a}
+     txt('druk',40,358,{size:18,base:'middle'});
+     rr(160,348,320,20,4);ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.stroke();
+     const pf=seg(t,24,29);if(pf>0){rr(161,349,318*pf,18,3);ctx.fillStyle=mix(C.warn,C.alarm,pf);ctx.fill()}
+     if(pf>=.98&&Math.floor(t*3)%2===0)txt('!!',494,359,{size:24,w:700,color:C.alarm,base:'middle'});
+     if(t>=26){ctx.globalAlpha=a*seg(t,26,27);
+       txt('opgesloten vloeistof: per graad al vele bars erbij',40,394,{size:18,color:C.alarm});
+       txt('tank met dampruimte: per graad ±0,2 bar',40,414,{size:17,w:500,color:C.ink2})}
+     ctx.globalAlpha=1}
+  }},
+{ title:'Vier ladingen vergeleken', short:'Vergelijking', dur:36,
+  caps:[[0,'Dezelfde natuurkunde, vier ladingen. Bovenaan: het kookpunt bij atmosferische druk.'],
+        [5,'Butaan heeft veruit de laagste druk. Onder 0 °C staat een butaantank zelfs in onderdruk.'],
+        [11,'Propaan en ammoniak liggen bij 15 °C bijna gelijk. Propyleen zit steeds een slag hoger.'],
+        [16,'Ammoniak heeft per kilo ruim drie keer zoveel warmte nodig om te verdampen.'],
+        [22,'Ammoniakdamp is lichter dan lucht, de andere drie zijn zwaarder en zakken naar dek en lage ruimtes. Een koude ammoniakwolk kan eerst wel laag blijven hangen.'],
+        [29,'En ammoniak is vooral giftig en bijtend, de koolwaterstoffen vooral brandbaar. Vergelijkbare druk, ander gevaar.']],
+  draw(t){
+   const cx=i=>205+i*118, rows=[108,190,272,354], starts=[0,5,16,22];
+   const hiCol=t>=5&&t<11?[1]:(t>=29?[3]:[]);
+   hiCol.forEach(i=>{ctx.globalAlpha=.13;ctx.fillStyle=C[GAS[i].id];rr(cx(i)-58,22,116,380,8);ctx.fill();ctx.globalAlpha=1});
+   const hiRow=t>=11&&t<16?1:(t>=16&&t<22?2:(t>=22&&t<29?3:-1));
+   if(hiRow>=0){ctx.globalAlpha=.1;ctx.fillStyle=C.ink;rr(6,rows[hiRow]-38,628,76,8);ctx.fill();ctx.globalAlpha=1}
+   GAS.forEach((g,i)=>txt(g.name,cx(i),46,{size:23,color:C[g.id],align:'center'}));
+   ctx.strokeStyle=C.line;ctx.lineWidth=1;line(10,62,630,62);
+   const labels=[['Kookpunt','bij 1 atm'],['Druk','bij 15 °C'],['Verdampings-','warmte'],['Damp t.o.v.','lucht']];
+   rows.forEach((y,r)=>{const a=seg(t,starts[r],starts[r]+1.2);if(a<=0)return;ctx.globalAlpha=a;
+     txt(labels[r][0],12,y-6,{size:19});txt(labels[r][1],12,y+16,{size:17,w:500,color:C.ink2});
+     GAS.forEach((g,i)=>{const x=cx(i);
+       if(r===0)txt(nf(g.bp,g.bp>-1?1:0)+' °C',x,y+8,{size:26,align:'center'});
+       if(r===1||r===2){const v=r===1?pG(g,15):g.L,max=r===1?8:1400,w=100*v/max*a;
+         txt(r===1?nf(v)+' bar(o)':g.L+' kJ/kg',x,y-6,{size:20,align:'center'});
+         ctx.fillStyle=C[g.id];rr(x-50,y+4,Math.max(3,w),14,3);ctx.fill();
+         ctx.strokeStyle=C.line;ctx.lineWidth=1;rr(x-50,y+4,100,14,3);ctx.stroke()}
+       if(r===3){const up=g.rel<1;ctx.fillStyle=up?C.cold:C.ink2;ctx.beginPath();
+         if(up){ctx.moveTo(x-30,y-6);ctx.lineTo(x-20,y-22);ctx.lineTo(x-10,y-6)}else{ctx.moveTo(x-30,y-18);ctx.lineTo(x-20,y-2);ctx.lineTo(x-10,y-18)}
+         ctx.closePath();ctx.fill();
+         txt(nf(g.rel,2)+'×',x-2,y-10,{size:21,base:'middle'});
+         txt(up?'stijgt op':'zakt',x,y+18,{size:17,w:500,color:up?C.cold:C.ink2,align:'center'})}
+     });ctx.globalAlpha=1});
+  }}
+];
+
+/* ================= DEEL 2: GASWETTEN ================= */
+class Box{
+ constructor(n){this.n=n;this.p=[];this.ok=false}
+ init(r){this.p=[];for(let i=0;i<this.n;i++){const a=rand(0,6.283),s=rand(70,130);this.p.push({x:rand(r.x0,r.x1),y:rand(r.y0,r.y1),vx:Math.cos(a)*s,vy:Math.sin(a)*s})}this.ok=true}
+ step(dt,r,k=1){if(!this.ok)this.init(r);if(r.y1<=r.y0+2)return;
+  for(const q of this.p){q.x+=q.vx*dt*k;q.y+=q.vy*dt*k;
+   if(q.y<r.y0-3||q.y>r.y1+3){q.y=rand(r.y0,r.y1)}
+   if(q.x<r.x0){q.x=r.x0;q.vx=Math.abs(q.vx)}if(q.x>r.x1){q.x=r.x1;q.vx=-Math.abs(q.vx)}
+   if(q.y<r.y0){q.y=r.y0;q.vy=Math.abs(q.vy)}if(q.y>r.y1){q.y=r.y1;q.vy=-Math.abs(q.vy)}}}
+ draw(n,col,rad=3.2){for(let i=0;i<Math.min(n,this.p.length);i++){const q=this.p[i];ctx.beginPath();ctx.arc(q.x,q.y,rad,0,7);ctx.fillStyle=typeof col==='function'?col(i):col;ctx.fill()}}
+}
+function gauge2(cx,cy,r,v,max,label,sub){
+ const a0=Math.PI*.75,a1=Math.PI*2.25,A=x=>a0+(a1-a0)*clamp(x/max);
+ ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fillStyle=C.surface;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=C.ink;ctx.stroke();
+ ctx.lineWidth=2;for(let i=0;i<=4;i++){const a=A(max*i/4);line(cx+Math.cos(a)*(r-4),cy+Math.sin(a)*(r-4),cx+Math.cos(a)*(r-15),cy+Math.sin(a)*(r-15))}
+ const a=A(v);ctx.strokeStyle=C.heat;ctx.lineWidth=3.5;line(cx,cy,cx+Math.cos(a)*(r-12),cy+Math.sin(a)*(r-12));
+ ctx.beginPath();ctx.arc(cx,cy,5,0,7);ctx.fillStyle=C.ink;ctx.fill();
+ txt(label,cx,cy-r-10,{size:17,w:500,color:C.ink2,align:'center'});
+ txt(nf(v,2)+' bar(a)',cx,cy+r+24,{size:22,align:'center'});
+ if(sub)txt(sub,cx,cy+r+46,{size:16,w:500,color:C.ink2,align:'center'});
+}
+function cyl(x,top,w,bot,py,liq=0,rod=true){
+ ctx.globalAlpha=.32;ctx.fillStyle=C.vapor;ctx.fillRect(x,py,w,bot-py);ctx.globalAlpha=1;
+ if(liq>0){ctx.fillStyle=C.liquid;ctx.fillRect(x,bot-liq,w,liq)}
+ ctx.strokeStyle=C.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.lineTo(x+w,bot);ctx.lineTo(x+w,top);ctx.stroke();
+ ctx.fillStyle=C.ink2;ctx.fillRect(x+3,py-14,w-6,14);
+ if(rod)ctx.fillRect(x+w/2-5,top-30,10,py-14-(top-30));
+}
+function tankShell(draw){ctx.save();rr(G.x,G.y,G.w,G.h,48);ctx.fillStyle=C.surface;ctx.fill();ctx.clip();
+ ctx.globalAlpha=.32;ctx.fillStyle=C.vapor;ctx.fillRect(G.x,G.y,G.w,G.h);ctx.globalAlpha=1;draw();ctx.restore();
+ rr(G.x,G.y,G.w,G.h,48);ctx.lineWidth=4;ctx.strokeStyle=C.ink;ctx.stroke()}
+function sun(x,y,t){ctx.fillStyle=C.warn;ctx.beginPath();ctx.arc(x,y,12,0,7);ctx.fill();ctx.strokeStyle=C.warn;ctx.lineWidth=2.5;
+ for(let i=0;i<8;i++){const a=i*Math.PI/4+t*.6;line(x+Math.cos(a)*16,y+Math.sin(a)*16,x+Math.cos(a)*23,y+Math.sin(a)*23)}}
+const GBOX={x0:G.x+16,x1:G.x+G.w-16,y0:G.y+10,y1:G.y+G.h-10};
+const PROPSAT15=pAbs(PROP,15);
+
+scenes.push(
+{ title:'Eerst: absoluut rekenen', short:'Absoluut', dur:28, part:2,
+  caps:[[0,'Eerst één regel: de gaswetten werken alleen met absolute druk en absolute temperatuur.'],
+        [6,'Absolute druk is manometerdruk plus 1 bar (precies 1,013). Een tank op 0 bar(o) staat nog op 1 bar(a): er zit gewoon gas in.'],
+        [14,'Absolute temperatuur in kelvin is °C plus 273. Bij 0 K bewegen de moleculen niet meer. Kouder kan niet.'],
+        [21,'Reken je met bar(o) of °C, dan komt er onzin uit. Bij 0 °C zou je zelfs door nul delen.']],
+  draw(t){
+   const sx=110,y0=60,y1=360,P=p=>y1-p/8*(y1-y0);
+   txt('Druk',sx,34,{size:24,align:'center'});
+   ctx.strokeStyle=C.ink;ctx.lineWidth=3;line(sx,y0,sx,y1);ctx.lineWidth=2;
+   for(let p=0;p<=8;p++){line(sx-8,P(p),sx,P(p));txt(String(p),sx-14,P(p),{size:17,w:500,color:C.ink2,align:'right',base:'middle'})}
+   txt('bar(a)',sx-14,y1+28,{size:17,align:'right'});
+   txt('vacuüm',sx+14,P(0),{size:17,w:500,color:C.ink2,base:'middle'});
+   const ga=seg(t,6,7.5);
+   if(ga>0){ctx.globalAlpha=ga;ctx.strokeStyle=C.heat;
+     for(let g=0;g<=6;g++){const y=P(g+ATM);line(sx,y,sx+8,y);txt(String(g),sx+14,y,{size:17,w:500,color:C.heat,base:'middle'})}
+     txt('bar(o)',sx+14,y1+28,{size:17,color:C.heat});
+     txt('= atmosfeer',sx+28,P(ATM),{size:17,w:500,color:C.ink2,base:'middle'});ctx.globalAlpha=1}
+   const ma=seg(t,9,10.5);
+   if(ma>0){ctx.globalAlpha=ma;const y=P(7.29);ctx.strokeStyle=C.liquid;ctx.lineWidth=3;line(sx-10,y,sx+180,y);
+     txt('tank: 6,3 bar(o) = 7,3 bar(a)',sx+40,y-10,{size:18,color:C.liquid});ctx.globalAlpha=1}
+   const tx=430,K=k=>y1-k/350*(y1-y0);
+   txt('Temperatuur',tx,34,{size:24,align:'center'});
+   ctx.strokeStyle=C.ink;ctx.lineWidth=3;line(tx,y0,tx,y1);ctx.lineWidth=2;
+   const ta=seg(t,14,15.5);
+   [[0,'−273'],[100,'−173'],[200,'−73'],[273.15,'0'],[323.15,'50']].forEach(([k,c])=>{
+     line(tx-8,K(k),tx+8,K(k));
+     ctx.globalAlpha=ta;txt(String(Math.round(k)),tx-14,K(k),{size:17,w:500,color:C.heat,align:'right',base:'middle'});ctx.globalAlpha=1;
+     txt(c,tx+14,K(k),{size:17,w:500,color:C.ink2,base:'middle'})});
+   txt('°C',tx+14,y1+28,{size:17});
+   ctx.globalAlpha=ta;txt('K',tx-14,y1+28,{size:17,color:C.heat,align:'right'});
+   txt('absoluut nulpunt',tx+60,K(0),{size:17,w:500,color:C.ink2,base:'middle'});
+   const y=K(288.15);ctx.strokeStyle=C.liquid;ctx.lineWidth=3;line(tx-10,y,tx+190,y);
+   txt('15 °C = 288 K',tx+60,y-10,{size:18,color:C.liquid});ctx.globalAlpha=1;
+  }},
+{ title:'Wet van Boyle', short:'Boyle', dur:32, part:2,
+  caps:[[0,'Wet van Boyle: bij gelijke temperatuur geldt p × V = constant.'],
+        [5,'Halveer het volume en de moleculen raken de wand twee keer zo vaak. De druk verdubbelt.'],
+        [13,'Nog eens halveren: vier keer de begindruk. Druk en volume zijn omgekeerd evenredig.'],
+        [20,'Aan boord werkt de compressor zo: hij perst damp in een kleiner volume en verhoogt daarmee de druk.'],
+        [26,'Wel opletten: bij snel samenpersen wordt gas ook warm. Boyle klopt pas weer als de temperatuur terug is.']],
+  box:new Box(40),
+  V(t){return t<5?1:(t<13?lerp(1,.5,sm((t-5)/4)):lerp(.5,.25,sm((t-13)/4)))},
+  reset(){this.box.ok=false},
+  draw(t,dt){const V=this.V(t),p=1/V,x=50,w=170,top=70,bot=370,py=bot-280*V;
+   cyl(x,top,w,bot,py);
+   this.box.step(dt,{x0:x+6,x1:x+w-6,y0:py+5,y1:bot-5});this.box.draw(40,C.ink);
+   txt('V = '+nf(V,2)+' m³',x+w/2,bot+30,{size:20,align:'center'});
+   gauge2(300,128,48,p,5,'druk','');
+   txt('15 °C, blijft gelijk',300,232,{size:17,w:500,color:C.ink2,align:'center'});
+   const X=v=>390+v*220,Y=q=>330-q/4.5*250;
+   ctx.strokeStyle=C.ink;ctx.lineWidth=2;line(390,80,390,330);line(390,330,620,330);
+   txt('p',382,86,{size:18,align:'right'});txt('V',628,334,{size:18,align:'right'});
+   for(const q of [1,2,4]){txt(String(q),382,Y(q),{size:16,w:500,color:C.ink2,align:'right',base:'middle'})}
+   for(const v of [.25,.5,1]){txt(String(v).replace('.',',').replace(/^0,/,'0,'),X(v),350,{size:16,w:500,color:C.ink2,align:'center'})}
+   ctx.beginPath();for(let v=1;v>=V-1e-6;v-=.01){const q=1/v;v===1?ctx.moveTo(X(v),Y(q)):ctx.lineTo(X(v),Y(q))}
+   ctx.strokeStyle=C.heat;ctx.lineWidth=3.5;ctx.stroke();
+   ctx.beginPath();ctx.arc(X(V),Y(p),7,0,7);ctx.fillStyle=C.heat;ctx.fill();
+   txt('p × V = '+nf(p,2)+' × '+nf(V,2)+' = 1,00',372,395,{size:21});
+   if(t>=20&&t<26)badge(135,40,'zo werkt de compressor',C.liquid);
+   if(t>=26)badge(135,40,'snel persen = warm',C.heat);
+  }},
+{ title:'Wet van Gay-Lussac', short:'Gay-Lussac', dur:32, part:2,
+  caps:[[0,'Wet van Gay-Lussac: bij gelijk volume geldt p / T = constant.'],
+        [5,'Een tank na het lossen: geen vloeistof meer, alleen propaandamp. 2,0 bar(o), dus 3,0 bar(a), bij 15 °C (288 K).'],
+        [12,'De zon warmt de tank op tot 45 °C (318 K). De moleculen bewegen sneller en raken de wand harder en vaker.'],
+        [19,'Nieuwe druk: 3,0 × 318 / 288 = 3,3 bar(a). Maar 0,3 bar erbij: 10% warmer in kelvin geeft 10% meer druk.'],
+        [26,'Onthoud dat. Met vloeistof in dezelfde tank liep de druk van 15 naar 45 °C ongeveer 8 bar op. Daarover gaat de laatste scène.']],
+  box:new Box(70),
+  T(t){return 15+30*seg(t,12,18)},
+  reset(){this.box.ok=false},
+  draw(t,dt){const T=this.T(t),K=T+273.15,pa=3.0*K/288.15,h=seg(t,12,18);
+   this.box.step(dt,GBOX,1+1.4*h);
+   tankShell(()=>this.box.draw(70,mix(C.ink,C.heat,h)));
+   txt('Lege tank, alleen propaandamp',G.x,G.y-16,{size:22});
+   if(t>=10){ctx.globalAlpha=seg(t,10,11);sun(410,62,t);ctx.globalAlpha=1}
+   gauge2(GX,GY,GR,pa,5,'druk','= '+nf(pa-ATM,2)+' bar(o)');thermo(530,300,70,T);
+   txt('p / T = '+nf(pa,2)+' / '+Math.round(K)+' K = '+nf(pa/K*1000,2)+' ‰',G.x,G.y+G.h+32,{size:21});
+   if(t>=19)txt('verhouding blijft gelijk',G.x,G.y+G.h+56,{size:17,w:500,color:C.ink2});
+   if(t>=26){ctx.globalAlpha=seg(t,26,27);badge(G.x+G.w/2,G.y+G.h/2,'met vloeistof: 6,3 → 14,3 bar(o)',C.alarm);ctx.globalAlpha=1}
+  }},
+{ title:'Wet van Charles', short:'Charles', dur:30, part:2,
+  caps:[[0,'Wet van Charles: bij gelijke druk geldt V / T = constant.'],
+        [5,'Een cilinder met een vrije zuiger: het gewicht houdt de druk gelijk. Warm het gas op en de zuiger komt omhoog.'],
+        [12,'Van 0 °C (273 K) naar 80 °C (353 K): het volume groeit 353 / 273 = 1,29 keer.'],
+        [19,'Trek de lijn door naar volume nul en je komt uit op −273 °C. Daar komt het absolute nulpunt vandaan.'],
+        [25,'Aan boord: damp die opwarmt bij gelijke druk neemt meer ruimte in. Bij een open verbinding schuift die extra damp de dampretour in.']],
+  box:new Box(40),
+  T(t){return 80*seg(t,7,13)},
+  reset(){this.box.ok=false},
+  draw(t,dt){const T=this.T(t),K=T+273.15,V=K/273.15,h=seg(t,7,13),x=60,w=160,top=50,bot=360,py=bot-200*V;
+   cyl(x,top,w,bot,py,0,false);
+   rr(x+40,py-14-36,w-80,36,4);ctx.fillStyle=C.ink;ctx.fill();txt('gewicht',x+w/2,py-32,{size:16,color:C.surface,align:'center',base:'middle'});
+   this.box.step(dt,{x0:x+6,x1:x+w-6,y0:py+5,y1:bot-5},1+1.4*h);this.box.draw(40,mix(C.ink,C.heat,h));
+   if(t>=5){ctx.globalAlpha=seg(t,5,6);for(let i=0;i<4;i++){const fx=x+30+i*33,f=Math.sin(t*9+i)*3;ctx.beginPath();ctx.moveTo(fx-9,bot+30);ctx.quadraticCurveTo(fx,bot+4+f,fx+9,bot+30);ctx.fillStyle=C.heat;ctx.fill()}ctx.globalAlpha=1}
+   txt(nf(T,0)+' °C = '+Math.round(K)+' K',x+w/2,bot+52,{size:20,align:'center'});
+   const X=c=>290+(c+300)/400*330,Y=v=>320-v/1.4*250;
+   ctx.strokeStyle=C.ink;ctx.lineWidth=2;line(290,60,290,320);line(290,320,620,320);
+   txt('V',282,66,{size:18,align:'right'});txt('°C',628,308,{size:17,align:'right'});
+   for(const c of [-300,-200,-100,0,100])txt(String(c).replace('-','−'),X(c),344,{size:16,w:500,color:C.ink2,align:'center'});
+   for(const v of [.5,1])txt(nf(v,1),282,Y(v),{size:16,w:500,color:C.ink2,align:'right',base:'middle'});
+   if(t>=19){ctx.globalAlpha=seg(t,19,20.5);ctx.setLineDash([7,6]);ctx.strokeStyle=C.ink2;ctx.lineWidth=2.5;line(X(-273.15),Y(0),X(0),Y(1));ctx.setLineDash([]);
+     ctx.beginPath();ctx.arc(X(-273.15),Y(0),7,0,7);ctx.fillStyle=C.cold;ctx.fill();
+     txt('0 K = −273 °C',X(-273.15)+12,Y(0)-14,{size:18,color:C.cold});ctx.globalAlpha=1}
+   ctx.strokeStyle=C.heat;ctx.lineWidth=3.5;line(X(0),Y(1),X(T),Y(V));
+   ctx.beginPath();ctx.arc(X(T),Y(V),7,0,7);ctx.fillStyle=C.heat;ctx.fill();
+   txt('V / T = '+nf(V,2)+' / '+Math.round(K)+' K',300,395,{size:21});
+  }},
+{ title:'Algemene gaswet en pV = nRT', short:'pV = nRT', dur:36, part:2,
+  caps:[[0,'Boyle, Gay-Lussac en Charles zijn drie stukken van één wet: p × V / T = constant. Dat is de algemene gaswet.'],
+        [7,'Houd je één grootheid gelijk, dan valt die weg en hou je een van de drie losse wetten over.'],
+        [13,'Avogadro: bij gelijke druk, temperatuur en volume zitten er in elk gas evenveel moleculen. Dat aantal tellen we in mol.'],
+        [20,'Zo wordt het pV = nRT. Een lege tank van 430 m³ op 3,0 bar(a) en 15 °C bevat ongeveer 53 800 mol damp.'],
+        [27,'Voor propaan (44 g/mol) is dat 2,4 ton. Leeg is dus niet leeg. Dezelfde tank met stikstof: evenveel moleculen, 1,5 ton.']],
+  b1:new Box(36),b2:new Box(36),
+  reset(){this.b1.ok=false;this.b2.ok=false},
+  draw(t,dt){
+   const aA=1-seg(t,12,13.2),aB=seg(t,13,14.2);
+   if(aA>0){ctx.globalAlpha=aA;
+     txt('p₁ · V₁ / T₁  =  p₂ · V₂ / T₂',320,110,{size:40,align:'center'});
+     txt('algemene gaswet',320,148,{size:20,w:500,color:C.ink2,align:'center'});
+     [['T gelijk','p · V = constant','Boyle'],['V gelijk','p / T = constant','Gay-Lussac'],['p gelijk','V / T = constant','Charles']].forEach((r,i)=>{
+       const a=seg(t,7+i*1.2,8+i*1.2);if(a<=0)return;ctx.globalAlpha=aA*a;const y=212+i*58;
+       rr(50,y-25,540,50,8);ctx.fillStyle=C.paper;ctx.fill();
+       txt(r[0],70,y,{size:21,base:'middle'});txt(r[1],320,y,{size:24,align:'center',base:'middle'});txt(r[2],570,y,{size:21,align:'right',base:'middle',color:C.liquid})});
+     ctx.globalAlpha=1}
+   if(aB>0){ctx.globalAlpha=aB;
+     [[this.b1,40,'propaandamp',C.propaan,'2,4 ton'],[this.b2,340,'stikstof',C.ink2,'1,5 ton']].forEach(([b,x,lab,col,m])=>{
+       const r={x0:x+12,x1:x+248,y0:58,y1:162};b.step(dt,r);
+       ctx.save();rr(x,48,260,124,44);ctx.fillStyle=C.surface;ctx.fill();ctx.clip();ctx.globalAlpha=aB*.32;ctx.fillStyle=C.vapor;ctx.fillRect(x,48,260,124);ctx.globalAlpha=aB;b.draw(36,col);ctx.restore();
+       rr(x,48,260,124,44);ctx.lineWidth=3.5;ctx.strokeStyle=C.ink;ctx.stroke();
+       txt(lab+', 430 m³',x+130,36,{size:19,align:'center'});
+       if(t>=27){ctx.globalAlpha=aB*seg(t,27,28);badge(x+130,110,m,col);ctx.globalAlpha=aB}});
+     if(t<20){ctx.globalAlpha=aB*(1-seg(t,19.3,20));txt('zelfde p, V en T',320,230,{size:28,align:'center'});txt('evenveel moleculen',320,266,{size:28,align:'center',color:C.liquid});ctx.globalAlpha=aB}
+     if(t>=20){ctx.globalAlpha=aB*seg(t,20,21);txt('p · V = n · R · T',320,228,{size:36,align:'center'});
+       ctx.globalAlpha=aB*seg(t,21.5,22.5);
+       txt('n = 300 000 × 430 / (8,314 × 288)',320,276,{size:21,w:500,align:'center'});
+       txt('≈ 53 800 mol',320,310,{size:26,align:'center',color:C.liquid});
+       if(t>=27){ctx.globalAlpha=aB*seg(t,27,28);txt('propaan: 53 800 × 44 g ≈ 2,4 t',320,352,{size:20,w:500,align:'center'});txt('stikstof: 53 800 × 28 g ≈ 1,5 t',320,380,{size:20,w:500,align:'center'})}}
+     ctx.globalAlpha=1}
+  }},
+{ title:'Wet van Dalton en stikstof', short:'Dalton', dur:34, part:2,
+  caps:[[0,'Wet van Dalton: in een mengsel gedraagt elk gas zich alsof het alleen in de tank zit. De totale druk is de som van de partiële drukken.'],
+        [7,'Inertiseren met stikstof. Tank met propaandamp op 1 bar(a), stikstof erbij tot 5 bar(a). Propaan levert nog steeds 1 bar, stikstof 4 bar: 20% propaan.'],
+        [15,'Afblazen naar 1 bar(a): de samenstelling blijft gelijk, dus nog 20%. Opnieuw persen en afblazen: 4%, dan 0,8%, dan 0,16%.'],
+        [23,'Elke cyclus deelt het gehalte door de drukverhouding. Zo spoel je met weinig stikstof een tank schoon.'],
+        [29,'Met vloeistof erin werkt Dalton ook: totale druk is dampspanning plus stikstof. Een stikstofkussen staat dus hoger dan de dampspanning alleen.']],
+  box:new Box(110),
+  st(t){if(t<7)return{p:1,fp:1,k:0};const cyc=[[7,12,15,17],[17,19,19,20.5],[20.5,22,22,23.5],[23.5,25,25,26.5]];let r={p:1,fp:1,k:0};
+   for(let k=0;k<4;k++){const[a,b,c,d]=cyc[k],f0=Math.pow(.2,k);if(t<a)break;
+     if(t<c)r={p:lerp(1,5,seg(t,a,b)),fp:f0,k:k+1};else{const p=lerp(5,1,seg(t,c,d));r={p,fp:p*f0/5,k:k+1}}}return r},
+  reset(){this.box.ok=false},
+  draw(t,dt){const liq=t>=29,la=seg(t,29,30.5);let{p,fp,k}=this.st(t);
+   if(liq){p=PROPSAT15+2.0;fp=PROPSAT15}
+   const L=liq?lvY(.45*la):G.y+G.h-10;
+   const n=liq?60:Math.round(20*p),np=Math.round(n*fp/p);
+   this.box.step(dt,{x0:GBOX.x0,x1:GBOX.x1,y0:GBOX.y0,y1:Math.min(GBOX.y1,L-4)});
+   tankShell(()=>{if(liq){ctx.fillStyle=C.liquid;ctx.fillRect(G.x,L,G.w,G.y+G.h-L)}this.box.draw(n,i=>i<np?C.propaan:C.ink2)});
+   txt(liq?'Tank met vloeistof en stikstofkussen':'Tank met propaandamp',G.x,G.y-16,{size:22});
+   const bx=470,bw=40,base=372,sc=28;
+   ctx.fillStyle=C.propaan;ctx.fillRect(bx,base-fp*sc,bw,fp*sc);
+   ctx.fillStyle=C.ink2;ctx.fillRect(bx,base-p*sc,bw,(p-fp)*sc);
+   ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.strokeRect(bx,base-p*sc,bw,p*sc);
+   txt(nf(p,1)+' bar(a)',bx+bw/2,base-p*sc-12,{size:20,align:'center'});
+   txt((liq?'damp ':'propaan ')+nf(fp,fp<.1?2:1),bx+bw+8,base-fp*sc/2,{size:17,color:C.propaan,base:'middle'});
+   if(p-fp>.15)txt('stikstof '+nf(p-fp,1),bx+bw+8,base-fp*sc-(p-fp)*sc/2,{size:17,color:C.ink2,base:'middle'});
+   const pct=fp/p*100;
+   if(!liq){txt('propaan: '+(pct>=10?Math.round(pct):nf(pct,pct<1?2:1))+'%',G.x,G.y+G.h+34,{size:24});
+     if(k>0)txt('cyclus '+k,G.x+G.w,G.y+G.h+34,{size:20,w:500,color:C.ink2,align:'right'})}
+   else{ctx.globalAlpha=la;txt('totaal '+nf(p,1)+' bar(a) = '+nf(p-ATM,1)+' bar(o)',G.x,G.y+G.h+34,{size:22});ctx.globalAlpha=1}
+  }},
+{ title:'Waarom ze niet gelden met vloeistof erin', short:'Met vloeistof', dur:40, part:2,
+  caps:[[0,'Waarom gelden de gaswetten dan niet in een geladen tank? Volg propaandamp bij 15 °C die we samenpersen.'],
+        [5,'Eerst gewoon Boyle: volume halveert, druk verdubbelt. De damp is hier nog onverzadigd.'],
+        [11,'Bij 7,3 bar(a) bereikt hij de dampspanning. Verder persen geeft geen hogere druk meer: de damp condenseert.'],
+        [17,'Pas als alles vloeistof is, schiet de druk omhoog. Dat is de opgesloten vloeistofleiding uit scène 5.'],
+        [23,'Hetzelfde bij opwarmen. Zonder vloeistof volgt de druk Gay-Lussac: van 15 naar 45 °C komt er nog geen bar bij.'],
+        [30,'Met vloeistof volgt de druk de dampspanningscurve: 8 bar erbij. De vloeistof blijft damp bijleveren.'],
+        [36,'Kortom: gaswetten voor damp en stikstof zonder vloeistof. Zit er vloeistof in, dan bepaalt de dampspanning de druk.']],
+  box:new Box(90),
+  V(t){return t<4?1:(t<11?lerp(1,.274,sm((t-4)/7)):(t<17?lerp(.274,.02,sm((t-11)/6)):lerp(.02,.0145,sm((t-17)/2))))},
+  pv(V){const Vs=2/PROPSAT15;return V>=Vs?2/V:(V>=.02?PROPSAT15:PROPSAT15+(.02-V)*1500)},
+  reset(){this.box.ok=false},
+  draw(t,dt){const V=this.V(t),p=this.pv(V),Vs=2/PROPSAT15,x=40,w=150,top=60,bot=372;
+   const h=20+260*Math.pow(V,.6),py=bot-h,lh=h*clamp((Vs-V)/(Vs-.02)),hv=h-lh;
+   const ph2=seg(t,23,24.2);
+   if(ph2<.5){
+   cyl(x,top,w,bot,py,lh);
+   const n=Math.min(90,Math.round(30/560*p*hv*(V<.02?0:1)));
+   this.box.step(dt,{x0:x+6,x1:x+w-6,y0:py+5,y1:bot-lh-5});this.box.draw(n,C.ink);
+   txt(nf(p,1)+' bar(a)',x+w/2,top-38,{size:22,align:'center'});}
+   ctx.globalAlpha=1;
+   if(ph2<1){ctx.globalAlpha=1-ph2;
+     const X=v=>250+v*370,Y=q=>350-q/10*280;
+     ctx.strokeStyle=C.ink;ctx.lineWidth=2;line(250,60,250,350);line(250,350,620,350);
+     txt('p (bar(a))',256,52,{size:17});txt('V',620,374,{size:18,align:'right'});
+     for(const q of [2,4,6,8,10])txt(String(q),242,Y(q),{size:16,w:500,color:C.ink2,align:'right',base:'middle'});
+     ctx.beginPath();let first=true;
+     for(let v=1;v>=Math.max(V,Vs);v-=.005){const q=2/v;first?(ctx.moveTo(X(v),Y(q)),first=false):ctx.lineTo(X(v),Y(q))}
+     if(V<Vs)ctx.lineTo(X(Math.max(V,.02)),Y(PROPSAT15));
+     if(V<.02)ctx.lineTo(X(.02),Y(Math.min(10,p)));
+     ctx.strokeStyle=C.heat;ctx.lineWidth=3.5;ctx.stroke();
+     ctx.beginPath();ctx.arc(X(Math.max(V,.02)),Y(Math.min(10,p)),7,0,7);ctx.fillStyle=C.heat;ctx.fill();
+     if(t>=11){ctx.setLineDash([6,6]);ctx.strokeStyle=C.cold;ctx.lineWidth=2;line(250,Y(PROPSAT15),620,Y(PROPSAT15));ctx.setLineDash([]);
+       txt('dampspanning 15 °C',612,Y(PROPSAT15)-10,{size:17,color:C.cold,align:'right'})}
+     txt('Boyle',X(.62),Y(2/.62)-14,{size:18,color:C.heat});
+     if(t>=13)txt('condenseert',X(.24),Y(PROPSAT15)+24,{size:18,color:C.liquid,align:'center'});
+     if(t>=17)txt('alleen vloeistof',X(.02)+12,Y(9.6),{size:18,color:C.alarm});
+     ctx.globalAlpha=1}
+   if(ph2>0){ctx.globalAlpha=ph2;
+     const X=c=>250+(c-10)/40*370,Y=q=>350-(q-6)/10*280;
+     ctx.strokeStyle=C.ink;ctx.lineWidth=2;line(250,60,250,350);line(250,350,620,350);
+     txt('p (bar(a))',242,48,{size:17,align:'left'});txt('°C',620,374,{size:17,align:'right'});
+     for(const q of [8,10,12,14,16])txt(String(q),242,Y(q),{size:16,w:500,color:C.ink2,align:'right',base:'middle'});
+     for(const c of [15,25,35,45])txt(String(c),X(c),374,{size:16,w:500,color:C.ink2,align:'center'});
+     const ig=T=>PROPSAT15*(T+273.15)/288.15;
+     const tc=t<30?15+30*seg(t,24,28):15+30*seg(t,30,34);thermo(100,150,150,tc);txt('zelfde tank',40,110,{size:20});
+     const e1=15+30*seg(t,24,28);ctx.beginPath();for(let c=15;c<=e1;c+=.5)c===15?ctx.moveTo(X(c),Y(ig(c))):ctx.lineTo(X(c),Y(ig(c)));
+     ctx.strokeStyle=C.ink2;ctx.lineWidth=3.5;ctx.stroke();
+     txt('zonder vloeistof: +'+nf(ig(e1)-PROPSAT15,1)+' bar',X(e1)-6,Y(ig(e1))-14,{size:18,color:C.ink2,align:'right'});
+     if(t>=30){const e2=15+30*seg(t,30,34);ctx.beginPath();for(let c=15;c<=e2;c+=.5)c===15?ctx.moveTo(X(c),Y(pAbs(PROP,c))):ctx.lineTo(X(c),Y(pAbs(PROP,c)));
+       ctx.strokeStyle=C.alarm;ctx.lineWidth=3.5;ctx.stroke();
+       txt('met vloeistof: +'+nf(pAbs(PROP,e2)-PROPSAT15,1)+' bar',X(e2)-10,Y(pAbs(PROP,e2))-12,{size:18,color:C.alarm,align:'right'})}
+     ctx.globalAlpha=1}
+  }}
+);
+
+/* ---------- speler ---------- */
+const starts=[];let acc=0;scenes.forEach(s=>{starts.push(acc);acc+=s.dur});const TOTAL=acc;
+let T=0,playing=false,last=null,cur=-1,needReset=true,dragging=false,lastCap='';
+const $=id=>document.getElementById(id);
+const scrub=$('scrub');scrub.max=TOTAL;
+const chapters=$('chapters');
+const chapBtns=[];scenes.forEach((s,i)=>{if(i===0||(s.part&&!scenes[i-1].part)){const d=document.createElement('span');d.className='chapsep';d.textContent='Deel '+(s.part||1);chapters.appendChild(d)}const b=document.createElement('button');b.className='chap';b.textContent=(i+1)+'. '+s.short;b.onclick=()=>seek(starts[i]+.01);chapters.appendChild(b);chapBtns.push(b)});
+const locate=t=>{let i=scenes.length-1;while(i>0&&t<starts[i])i--;return i};
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function setPlaying(p){playing=p;$('playBtn').textContent=p?'❚❚':'▶';$('playBtn').setAttribute('aria-label',p?'Pauzeren':'Afspelen');if(p)$('startBtn').hidden=true}
+function seek(v){T=clamp(v,0,TOTAL-.01);needReset=true;if(!$('startBtn').hidden)$('startBtn').hidden=true}
+$('s1').onclick=()=>{seek(0);setPlaying(true)};$('s2').onclick=()=>{seek(starts[scenes.findIndex(x=>x.part===2)]+.01);setPlaying(true)};
+$('playBtn').onclick=()=>{if(!playing&&T>=TOTAL-.05)seek(0);setPlaying(!playing)};
+$('prevBtn').onclick=()=>{const i=locate(T);seek(T-starts[i]>2||i===0?starts[i]+.01:starts[i-1]+.01)};
+$('nextBtn').onclick=()=>{const i=locate(T);if(i<scenes.length-1)seek(starts[i+1]+.01)};
+scrub.addEventListener('input',()=>{dragging=true;seek(+scrub.value)});
+scrub.addEventListener('change',()=>{dragging=false});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|BUTTON|SUMMARY/.test(e.target.tagName)){e.preventDefault();$('playBtn').click()}});
+
+function render(dt){
+ const i=locate(T),s=scenes[i],t=T-starts[i];
+ if(i!==cur||needReset){if(s.reset)s.reset(t);needReset=false;
+  if(i!==cur){cur=i;chapBtns.forEach((c,k)=>c.setAttribute('aria-current',k===i?'true':'false'));
+   chapBtns[i].scrollIntoView({block:'nearest',inline:'nearest'});$('sceneTitle').textContent='Deel '+(s.part||1)+', scène '+(i+1)+' van '+scenes.length+': '+s.title;cv.setAttribute('aria-label','Animatie: '+s.title)}}
+ let c='';for(const [ct,tx] of s.caps)if(t>=ct)c=tx;
+ if(c!==lastCap){lastCap=c;$('cap').textContent=c}
+ ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle=C.surface;ctx.fillRect(0,0,VW,VH);
+ s.draw(t,dt);
+ if(!dragging)scrub.value=T.toFixed(1);
+ $('time').textContent=mmss(T)+' / '+mmss(TOTAL);
+}
+function frame(ts){const dt=last==null?0:Math.min(.05,(ts-last)/1000);last=ts;
+ if(playing){T+=dt;if(T>=TOTAL){T=TOTAL-.01;setPlaying(false)}}
+ render(playing?dt:0);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* ---------- zelf proberen ---------- */
+let gsel=GAS[0];
+const gc=$('gaschips');
+GAS.forEach(g=>{const b=document.createElement('button');b.className='gaschip';b.setAttribute('role','radio');
+ b.innerHTML=`<i style="background:var(--${g.id})"></i>${g.name}`;b.onclick=()=>{gsel=g;upd()};b.dataset.id=g.id;gc.appendChild(b)});
+const tIn=$('tIn'),pIn=$('pIn');tIn.oninput=upd;pIn.oninput=upd;
+function fT(x){return x===-Infinity?'onder −50 °C':x===Infinity?'boven 50 °C':nf(x)+' °C'}
+function upd(){
+ [...gc.children].forEach(b=>b.setAttribute('aria-checked',b.dataset.id===gsel.id?'true':'false'));
+ const T=+tIn.value,pa=pAbs(gsel,T),pg=pa-ATM;
+ $('tOut').textContent=nf(T,0)+' °C';
+ $('pOut').textContent=nf(pg)+' bar(o)';
+ let col='--ok',st='Ruim onder de openingsdruk van de veiligheidskleppen.';
+ if(pg<0){col='--cold';st='Onderdruk: de lading staat onder atmosferische druk.'}
+ else if(pg>=VALVE){col='--alarm';st='Boven de openingsdruk van de veiligheidskleppen (15,8 bar).'}
+ else if(pg>=12){col='--warn';st='Nadert de openingsdruk van de veiligheidskleppen.'}
+ $('res').style.borderLeftColor=`var(${col})`;$('st').textContent=st;
+ const i=idx(T),Tc=tAt(gsel,VALVE+ATM);
+ $('calcBody').innerHTML=[
+  ['Absolute druk',nf(pa,2)+' bar(a) = '+Math.round(pa*100)+' kPa(a)'],
+  ['Overdruk',nf(pg,2)+' bar(o) = '+Math.round(pg*100)+' kPa(o)'],
+  ['Marge tot veiligheidsklep',nf(VALVE-pg,1)+' bar'],
+  ['Klepdruk bereikt bij',fT(Tc)],
+  ['Kookpunt bij 1 atm',nf(gsel.bp)+' °C'],
+  ['Verdampingswarmte',gsel.L+' kJ/kg'],
+  ['Vloeistofdichtheid 15 °C','± '+gsel.rho+' kg/m³'],
+  ['Tabelpunten',`${TS[i]} °C: ${nf(gsel.P[i],2)} · ${TS[i+1]} °C: ${nf(gsel.P[i+1],2)} bar(a)`],
+  ['Interpolatie','lineair in ln(p)']
+ ].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ const pv=parseFloat(pIn.value);
+ if(isNaN(pv)){$('inv').textContent=''}else{const tb=tAt(gsel,pv+ATM);
+  $('inv').textContent=`Bij ${nf(pv)} bar(o) kookt ${gsel.name.toLowerCase()} bij ${fT(tb)}. Is de lading warmer, dan kookt hij bij deze druk.`}
+}
+upd();
+/* ---------- gaswet-rekenaar ---------- */
+const MOL={propaan:44.10,butaan:58.12,propyleen:42.08,ammoniak:17.03,stikstof:28.01};
+const GAS2=[...GAS,{id:'stikstof',name:'Stikstof',inert:true}];
+let g2=GAS2[0];const gc2=$('gaschips2');
+GAS2.forEach(g=>{const b=document.createElement('button');b.className='gaschip';b.setAttribute('role','radio');b.dataset.id=g.id;
+ b.innerHTML=`<i style="background:var(--${g.inert?'ink2':g.id})"></i>${g.name}`;b.onclick=()=>{g2=g;upd2()};gc2.appendChild(b)});
+['g_p1','g_t1','g_t2','g_v1','g_v2'].forEach(id=>$(id).addEventListener('input',upd2));
+function upd2(){
+ [...gc2.children].forEach(b=>b.setAttribute('aria-checked',b.dataset.id===g2.id?'true':'false'));
+ const v=id=>parseFloat(String($(id).value).replace(',','.'));
+ const p1=v('g_p1'),t1=v('g_t1'),t2=v('g_t2'),V1=v('g_v1'),V2=v('g_v2');
+ const res=$('gres'),set=(col,big,st)=>{res.style.borderLeftColor=`var(${col})`;$('gOut').textContent=big;$('gst').textContent=st};
+ if([p1,t1,t2,V1,V2].some(isNaN)||V1<=0||V2<=0||t1<=-273||t2<=-273||p1<=-ATM){set('--warn','–','Controleer de invoer.');$('gcalc').innerHTML='';return}
+ const p1a=p1+ATM,K1=t1+273.15,K2=t2+273.15,p2a=p1a*V1*K2/(V2*K1),p2g=p2a-ATM;
+ const n=p1a*1e5*V1/(8.314*K1),m=n*MOL[g2.id]/1000;
+ let col='--ok',st='Damp blijft onverzadigd: de gaswet geldt.';
+ if(g2.inert)st='Stikstof condenseert niet bij deze temperaturen: de gaswet geldt.';
+ if(!g2.inert){
+   if(t1<-50||t1>50||t2<-50||t2>50){col='--warn';st='Temperatuur buiten −50 tot 50 °C: dampspanning niet gecontroleerd.'}
+   else if(p1a>=pAbs(g2,t1)){col='--warn';st=`De begintoestand ligt al op de dampspanning (${nf(pG(g2,t1))} bar(o)). Er staat vloeistof of er condenseert damp: de gaswet geldt niet.`}
+   else if(p2a>=pAbs(g2,t2)){col='--warn';st=`Hoger dan de dampspanning bij ${nf(t2,0)} °C (${nf(pG(g2,t2))} bar(o)). Er condenseert damp en de druk blijft daar ongeveer op staan.`}}
+ if(p2g>=VALVE){col='--alarm';st='Boven de openingsdruk van de veiligheidskleppen (15,8 bar). '+(st.startsWith('Hoger')?st:'')}
+ set(col,nf(p2g,2)+' bar(o)',st);
+ const rows=[['Begindruk absoluut',nf(p1a,3)+' bar(a)'],['T₁ / T₂',nf(K1,1)+' K / '+nf(K2,1)+' K'],
+  ['p₂ = p₁ · V₁ · T₂ / (V₂ · T₁)',nf(p2a,3)+' bar(a)'],['Nieuwe overdruk',nf(p2g,3)+' bar(o)'],
+  ['Hoeveelheid gas n = pV / RT',Math.round(n).toLocaleString('nl-NL')+' mol'],
+  ['Massa (M = '+nf(MOL[g2.id],2)+' g/mol)',m>=1000?nf(m/1000,2)+' t':nf(m,0)+' kg']];
+ if(!g2.inert&&t2>=-50&&t2<=50)rows.push(['Dampspanning bij '+nf(t2,0)+' °C',nf(pG(g2,t2),2)+' bar(o)']);
+ $('gcalc').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+}
+upd2();
+</script>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laad- en lossimulator gastanker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#d4d6d1;--schem:#e4e5e0;--panel:#e8e9e4;--panel2:#f4f5f1;--ink:#1d2321;--muted:#59615c;--line:#6b726d;--rule:#b9bcb6;
+--c-vl:#2f6390;--c-gz:#8a6f12;--c-gp:#8a3f78;--open:#25804a;--warn:#b86e00;--alarm:#c0322a;--liquid:#9cc0dd;--vapour:#f4f5f1;--focus:#2f6390;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1f22;--schem:#22272b;--panel:#262b2f;--panel2:#2f3539;--ink:#e2e6e3;--muted:#9ba39e;--line:#8b928d;--rule:#3a4146;
+--c-vl:#6fa3d2;--c-gz:#d1b04a;--c-gp:#cf86bd;--open:#3cb86a;--warn:#e5a12e;--alarm:#f0594c;--liquid:#2f5677;--vapour:#2f3539;--focus:#6fa3d2;color-scheme:dark;}}
+:root[data-theme="dark"]{--bg:#1b1f22;--schem:#22272b;--panel:#262b2f;--panel2:#2f3539;--ink:#e2e6e3;--muted:#9ba39e;--line:#8b928d;--rule:#3a4146;
+--c-vl:#6fa3d2;--c-gz:#d1b04a;--c-gp:#cf86bd;--open:#3cb86a;--warn:#e5a12e;--alarm:#f0594c;--liquid:#2f5677;--vapour:#2f3539;--focus:#6fa3d2;color-scheme:dark;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;font-size:16px;line-height:1.4;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:12px}
+header.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+h1{font-size:1.4rem;font-weight:600;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.92rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin-bottom:12px}
+.clock{font-size:1.5rem;font-weight:600;min-width:6.5ch}
+.kpi{font-size:.92rem;color:var(--muted)} .kpi b{color:var(--ink);font-size:1.1rem;font-weight:600}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.grid{grid-template-columns:minmax(380px,520px) 1fr;align-items:start}.schema{position:sticky;top:12px}}
+.schema{background:var(--schem);border:1px solid var(--rule);border-radius:6px;padding:4px}
+.schema svg{display:block;width:100%;height:auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:12px}
+.card h2{font-size:1.08rem;font-weight:600;margin:0 0 8px}
+.card p{margin:.3em 0;color:var(--muted);font-size:.92rem}
+button,select,input{font:inherit;color:var(--ink)}
+button{min-height:44px;padding:0 12px;border-radius:5px;border:1px solid var(--line);background:var(--panel2);cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,[role=button]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+button.on{background:var(--open);border-color:var(--open);color:#fff}
+button.esd{background:var(--alarm);border-color:var(--alarm);color:#fff;font-weight:600;width:100%;min-height:54px;font-size:1.05rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:flex;gap:0}.seg button{border-radius:0;margin-left:-1px;min-width:46px}.seg button:first-child{border-radius:5px 0 0 5px}.seg button:last-child{border-radius:0 5px 5px 0}
+.seg button.sel,#tabs button.sel{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+#tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}#tabs button{padding:0}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.readout div{background:var(--panel2);border-radius:4px;padding:6px 8px}
+.readout b{display:block;font-size:1.3rem;font-weight:600;line-height:1.2}.readout span{font-size:.82rem;color:var(--muted)}
+.state{font-weight:600}.state.ok{color:var(--open)}.state.bad{color:var(--alarm)}
+.vrow,.crow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center;margin-top:6px}
+.lname{display:flex;flex-direction:column;font-weight:500;line-height:1.2;position:relative;padding-left:14px}
+.lname i{position:absolute;left:0;top:.3em;width:8px;height:8px;border-radius:2px}
+.lname small{font-weight:400;color:var(--muted);font-size:.8rem}
+#mvBtns{display:grid;grid-template-columns:1fr;gap:6px}
+@media(min-width:480px){#mvBtns{grid-template-columns:1fr 1fr 1fr}}
+.pumps{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.pill{font-size:.85rem;font-weight:600;padding:2px 10px;border-radius:99px;border:1px solid currentColor}
+.pill.ok{color:var(--open)}.pill.warn{color:var(--warn)}.pill.bad{color:#fff;background:var(--alarm);border-color:var(--alarm)}
+#log{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;font-size:.92rem}
+#log li{padding:4px 0 4px 8px;border-left:3px solid var(--rule);margin-bottom:3px}
+#log li.warn{border-color:var(--warn)}#log li.alarm{border-color:var(--alarm)}
+#log time{color:var(--muted);margin-right:8px}
+select{min-height:44px;border-radius:5px;border:1px solid var(--line);background:var(--panel2);padding:0 8px}
+details summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+.set{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.set label{font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.set input{min-height:40px;border-radius:5px;border:1px solid var(--line);background:var(--panel2);padding:0 8px;width:100%}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--rule)}th:first-child,td:first-child{text-align:left}th{font-weight:500;color:var(--muted)}
+#tech{font-size:.9rem;color:var(--muted);margin-top:8px}
+ol{margin:.3em 0 .6em;padding-left:1.3em;font-size:.94rem}
+/* alarmbanner */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.banner{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:6px;margin-bottom:10px;color:#fff;background:var(--alarm)}
+.banner.k-niveau,.banner.k-proces{background:var(--warn);color:#1d1600}
+.banner.acked{background:var(--panel);color:var(--ink);border:1px solid var(--rule)}
+.banner .bk{font-weight:600}.banner .bt{flex:1;min-width:12ch}
+.banner button{min-height:40px;background:rgba(255,255,255,.18);border-color:currentColor;color:inherit}
+.banner.acked button{background:var(--panel2)}
+.red{color:var(--alarm)}
+.mrow{display:grid;grid-template-columns:1.3fr .8fr 1fr 1fr;gap:6px;align-items:center;margin-top:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.esd2{background:var(--alarm);border-color:var(--alarm);color:#fff;font-weight:600;min-height:52px}
+.small{font-size:.85rem;color:var(--muted)}
+.ref{font-size:.88rem;color:var(--muted);margin:.4em 0;padding-left:1.1em}.ref li{margin:.15em 0}
+@keyframes blink{50%{opacity:.45}}.tank.blink .tankline{animation:blink 1s steps(1) infinite}
+@media (prefers-reduced-motion:reduce){.tank.blink .tankline{animation:none}}
+/* schema */
+.ln{fill:none;stroke-width:2.5;stroke-linecap:round}.ln.live{stroke-width:4}
+.halo{fill:none;stroke:var(--schem);stroke-width:8}
+.flow{stroke-dasharray:7 5;animation:dash .7s linear infinite}.flow.rev{animation-direction:reverse}
+@keyframes dash{to{stroke-dashoffset:-12}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}}
+.valve,.tank,.comp,.pump{cursor:pointer;outline:none}
+.valve .body{fill:var(--panel2);stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
+.valve.open .body{fill:var(--open);stroke:var(--open)}
+.valve .stem{stroke:var(--ink);stroke-width:1.2}.valve .act{fill:var(--ink)}
+.hit{fill:transparent}
+.valve:focus-visible .body,.comp:focus-visible .cbody,.pump:focus-visible .pbody{stroke:var(--focus);stroke-width:3}
+.tankbody{fill:var(--vapour)}.tankline{fill:none;stroke:var(--line);stroke-width:1.5}
+.tank.sel .tankline{stroke:var(--ink);stroke-width:3}
+.tank.warn .tankline{stroke:var(--warn);stroke-width:3}.tank.alarm .tankline{stroke:var(--alarm);stroke-width:3.5}
+.tank:focus-visible .tankline{stroke:var(--focus);stroke-width:3.5}
+.liq{fill:var(--liquid)}.gauge{fill:var(--vapour);stroke:var(--line)}
+.shore{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+.mark{stroke-width:1.2}.m86{stroke:var(--warn);stroke-dasharray:4 3}.m91{stroke:var(--ink);stroke-width:1.4}.m975{stroke:var(--alarm);stroke-dasharray:2 2}
+.hose{fill:none;stroke-width:3}.blind{fill:var(--ink)}.hosebox{cursor:pointer}
+.st{font-size:12px;fill:var(--ink)}.st.big{font-size:15px;font-weight:600}.st.m{fill:var(--muted)}.st.b{font-weight:600}.st.on{fill:var(--open);font-weight:600}.st.bad{fill:var(--alarm);font-weight:600}
+.pbody{fill:var(--panel2);stroke:var(--ink);stroke-width:1.2}.pump.run .pbody{fill:var(--open);stroke:var(--open)}.pump.run .ptri{fill:#fff}
+.tt{font-size:12px;fill:var(--ink);paint-order:stroke;stroke:var(--vapour);stroke-width:3px;stroke-linejoin:round}
+.tt.big{font-size:15px;font-weight:600}.tt.id{font-size:15px;font-weight:600}.tt.m{fill:var(--muted)}.tt.b{font-weight:600}.tt.on{fill:var(--open);font-weight:600}
+.shore~.tt,.shore+.tt{stroke:var(--panel)}
+.lbl{font-size:10px;fill:var(--muted);paint-order:stroke;stroke:var(--schem);stroke-width:3px}
+.cbody,.pbody{fill:var(--panel2);stroke:var(--ink);stroke-width:1.5}.cmark{stroke:var(--ink);stroke-width:1.3;fill:none}.ptri{fill:var(--ink)}
+.comp.run .cbody,.pump.run .pbody{fill:var(--open);stroke:var(--open)}.comp.run .cmark{stroke:#fff}.pump.run .ptri{fill:#fff}
+.comp.trip .cbody{stroke:var(--alarm);stroke-width:3}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><h1>Laad- en lossimulator gastanker</h1><span class="sub">Type G, 6 druktanks van 430 m³, lading <span id="prodName">Propaan</span></span></header>
+<div id="banner" class="banner" hidden role="alert"><span class="bk" id="bKind"></span><span class="bt" id="bText"></span><button id="ackBtn" data-act="ack">Bevestigen</button><button id="muteBtn" data-act="mute">Geluid aan</button></div>
+<div class="bar">
+  <span class="clock" id="simTime">0:00:00</span>
+  <div class="seg" id="speed"><button data-s="1">1×</button><button data-s="10">10×</button><button data-s="60" class="sel">60×</button><button data-s="300">300×</button><button data-s="600">600×</button></div>
+  <button id="pause">Pauze</button>
+  <span class="kpi">Aan boord <b id="onboard">0</b> t</span>
+  <span class="kpi">Tempo <b id="rate">stil</b> t/u</span>
+</div>
+<div class="grid">
+<section class="schema" aria-label="Leidingschema"><svg id="pid" xmlns="http://www.w3.org/2000/svg"></svg></section>
+<section class="panel">
+  <div class="card">
+    <h2 id="selTitle">Tank 1</h2>
+    <div id="tabs"></div>
+    <div class="readout" id="selStats" style="margin:0 0 8px"></div>
+    <button id="pumpBtn" data-act="pump" style="width:100%">Lospomp uit</button>
+    <p id="pumpMano" class="small"></p>
+    <div id="selValves"></div>
+    <div class="g2" style="margin-top:10px"><button data-act="testLvl">Test niveau-alarm</button><button data-act="testOvf">Test overvulbeveiliging</button></div>
+    <p>Doorlaat is pas open als handafsluiter én snelsluiter open staan. Streepjes in de tank: oranje 86% niveau-alarm, zwart 91% max. vullingsgraad, rood 97,5% overvulbeveiliging.</p>
+  </div>
+  <div class="card">
+    <h2>Compressor</h2>
+    <div class="row"><button id="compBtn" data-act="comp" style="flex:1">Compressor starten</button><span id="compState" class="state">Uit</span></div>
+    <div class="readout"><div><b id="cPs">–</b><span>zuig bar</span></div><div><b id="cPd">–</b><span>pers bar</span></div><div><b id="cM">0</b><span>t/u</span></div></div>
+    <p>Zuigt via gas zuig uit tanks of van de wal en perst via gas pers naar andere tanks of naar de wal.</p>
+  </div>
+  <div class="card">
+    <h2>Schip-walverbinding</h2>
+    <div class="row" style="justify-content:space-between"><span id="linkState" class="state ok">Signaal in orde</span><button id="linkReset" data-act="linkReset" hidden>Herstellen</button></div>
+    <div class="g2" style="margin-top:8px"><button id="shorePumpBtn" data-act="shorePump">Walpomp uit</button><button id="shoreStopBtn" data-act="shoreStop">Wal stopt lossen</button></div>
+    <div id="mvRows"></div>
+    <p>Overvulbeveiliging en drukalarm onderbreken de stroomkring van de wal: de wal stopt en de eigen lospompen gaan uit.</p>
+  </div>
+  <div class="card">
+    <h2>Noodstop en centrale bediening</h2>
+    <div class="g2"><button class="esd2" data-act="esdFwd">Noodstop voor</button><button class="esd2" data-act="esdAft">Noodstop achter</button></div>
+    <div class="g2" style="margin-top:6px"><button data-act="stopZone">Stop pompen ladingzone</button><button data-act="stopWheel">Stop pompen stuurhuis</button></div>
+    <div class="g2" style="margin-top:6px"><button data-act="allPumpsOff">Alle lospompen uit</button><button data-act="closeTanks">Alle tanksnelsluiters dicht</button></div>
+    <div id="central"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Logboek</h2><button id="clearLog">Wissen</button></div>
+    <ul id="log" style="margin-top:8px"></ul>
+  </div>
+  <div class="card">
+    <h2>Situatie</h2>
+    <div class="row"><select id="prod" aria-label="Lading"><option value="propaan">Propaan</option><option value="butaan">Butaan</option><option value="propyleen">Propyleen</option><option value="ammoniak">Ammoniak</option></select>
+    <button id="btnLaden">Opnieuw: laden</button><button id="btnLossen">Opnieuw: lossen</button></div>
+    <p>Opnieuw beginnen zet alle afsluiters dicht en de blindflenzen erop. Laden start met restlading, lossen met tanks rond 90%.</p>
+    <details style="margin-top:8px"><summary>Werkwijze</summary>
+      <p><b>Laden met dampretour</b></p>
+      <ol><li>Sluit de slangen aan op vloeistof en damp naar wal.</li><li>Open daar afsluiter en snelsluiter.</li><li>Zet per tank vloeistof en gas zuig open, hand én snel.</li><li>Start de compressor (zuigt uit de tanks, perst naar de wal) en laat de wal pompen.</li><li>Stop bij 91%. Het niveau-alarm komt bij 86%.</li></ol>
+      <p><b>Lossen met diepwellpompen</b></p>
+      <ol><li>Sluit de slangen aan op vloeistof en damp van wal.</li><li>Zet per tank vloeistof en gas pers open.</li><li>Start de compressor (zuigt damp van de wal, drukt de tanks op).</li><li>Start de lospomp en open dan de afsluiters, of andersom. Na 2 minuten zonder doorstroming komt een melding, na 10 minuten gaat de pomp uit. De pomp stopt ook vanzelf als de tank leeg is.</li></ol>
+      <p><b>Overpompen</b>: lospomp van tank A met vloeistof open op A en B, of de compressor met gas zuig op A en gas pers op B.</p>
+    </details>
+  </div>
+  <details class="card" id="expert"><summary>Technisch</summary>
+    <div class="set">
+      <label>Niveau-alarm %<input type="number" step="0.5" data-set="lvlAlarm"></label>
+      <label>Max. vullingsgraad %<input type="number" step="0.5" data-set="maxFill"></label>
+      <label>Overvulbeveiliging %<input type="number" step="0.5" data-set="overfill"></label>
+      <label>Openingsdruk veiligheidsklep bar<input type="number" step="0.1" data-set="relief"></label>
+      <label>Drukalarm % van openingsdruk<input type="number" step="1" data-set="pAlarmPct"></label>
+      <label>Temperatuuralarm °C<input type="number" step="1" data-set="tAlarm"></label>
+      <label>Omgevingstemp. °C<input type="number" step="1" data-set="Tamb"></label>
+      <label>Lospomp max m³/u<input type="number" step="10" data-set="pumpQ"></label>
+      <label>Lospomp opvoerdruk bar<input type="number" step="0.5" data-set="pumpDp"></label>
+      <label>Compressor m³/u<input type="number" step="10" data-set="compQ"></label>
+      <label>Max persdruk compressor bar<input type="number" step="0.1" data-set="maxPd"></label>
+      <label>Walpomp max m³/u<input type="number" step="10" data-set="shoreQ"></label>
+    </div>
+    <div class="tw"><table id="tbl"></table></div>
+    <div id="tech"></div>
+    <p><b>ADN 9.3.1 in deze simulator</b></p>
+    <ul class="ref">
+      <li>9.3.1.21.1 c: niveau-alarm uiterlijk bij 86%, los van de niveaumeting.</li>
+      <li>9.3.1.21.1 d en .5 a: overvulbeveiliging uiterlijk bij 97,5%; onderbreekt de stroomkring van de wal en schakelt de eigen lospompen uit.</li>
+      <li>9.3.1.21.3: max. vullingsgraad 91% gemarkeerd bij elke niveaumeting.</li>
+      <li>9.3.1.21.5 b: de wal kan de eigen lospompen uitschakelen.</li>
+      <li>9.3.1.21.6: niveau-alarm en overvulbeveiliging hebben een duidelijk verschillend licht- en geluidssignaal; testen kan per tank.</li>
+      <li>9.3.1.21.7: druk- en temperatuuralarm; tijdens laden of lossen onderbreekt het drukalarm de verbinding met de wal en stopt het de lospompen.</li>
+      <li>9.3.1.21.9: noodstop voor en achter sluit de snelsluiters bij de walaansluiting.</li>
+      <li>9.3.1.25.1: pompen en compressor uit te schakelen in én buiten de ladingzone.</li>
+      <li>9.3.1.25.2 d: afsluiters dubbel uitgevoerd, één als snelsluiter op afstand.</li>
+      <li>9.3.1.25.2 f: walaansluitingen met afsluiter, snelsluiter en blindflens.</li>
+      <li>9.3.1.25.7: manometer op in- en uitgang van de lospomp.</li>
+    </ul>
+    <p class="small">Bron: ADN, deel 9, 9.3.1 (Nederlandse tekst). Scheepswaarden: openingsdruk 1580 kPa, max. vullingsgraad 91%.</p>
+  </details>
+</section>
+</div>
+</main>
+<script>
+// ===== SIMULATIEKERN (geen DOM) — ADN 9.3.1 type G =====
+const ATM=101325, R=8.314, G=9.81;
+const PRODUCTS={
+  propaan:  {name:'Propaan',  M:44.10, Tb:231.1, p20:8.36, rho20:500, beta:0.0030, L:356e3,  cp:2600, cpv:1670, k:1.13},
+  butaan:   {name:'Butaan',   M:58.12, Tb:272.7, p20:2.08, rho20:579, beta:0.0020, L:385e3,  cp:2400, cpv:1700, k:1.10},
+  propyleen:{name:'Propyleen',M:42.08, Tb:225.4, p20:10.2, rho20:514, beta:0.0031, L:438e3,  cp:2500, cpv:1530, k:1.15},
+  ammoniak: {name:'Ammoniak', M:17.03, Tb:239.8, p20:8.57, rho20:610, beta:0.0024, L:1190e3, cp:4700, cpv:2160, k:1.31},
+};
+for(const key in PRODUCTS){const p=PRODUCTS[key]; p.B=Math.log(p.p20*1e5/ATM)/(1/p.Tb-1/293.15);}
+
+/* LEIDINGEN — nieuwe leiding = regel toevoegen.
+   kind 'liquid'|'gas'; role 'suction'|'discharge' (compressor) of weglaten (alleen vereffenen);
+   shoreY = hoogte walaansluiting in schema; mv = naam walaansluiting; pumps = diepwellpompen/walpomp op deze leiding. */
+const LINES=[
+  {id:'vl', name:'Vloeistof', kind:'liquid', color:'var(--c-vl)', shoreY:30,  mv:'mv_vl', run:'vloeistof', pumps:true},
+  {id:'gz', name:'Gas zuig',  kind:'gas', role:'suction',   color:'var(--c-gz)', shoreY:128, mv:'mv_gz', run:'damp van wal'},
+  {id:'gp', name:'Gas pers',  kind:'gas', role:'discharge', color:'var(--c-gp)', shoreY:58,  mv:'mv_gp', run:'damp naar wal'},
+];
+const MV_NAMES={mv_vl:'Vloeistof', mv_gz:'Damp van wal', mv_gp:'Damp naar wal'};
+const NT=6, TANK_V=430, TANK_D=4.4;
+/* Instellingen. ADN-waarden: niveau-alarm 86% (9.3.1.21.1 c), overvulbeveiliging 97,5% (9.3.1.21.1 d),
+   max vullingsgraad 91% (scheepsstoffenlijst), openingsdruk veiligheidsklep 1580 kPa (certificaat). */
+const S={Tamb:15, compQ:350, shoreQ:250, shoreDp:6, pumpQ:110, pumpDp:7,
+  lvlAlarm:86, maxFill:91, overfill:97.5, relief:15.8, pAlarmPct:97, tAlarm:40, maxPd:15.8, minPs:0.5, lowP:0.1, pumpMin:0.6};
+const pAlarm=()=>S.relief*S.pAlarmPct/100;
+const K={gas:0.0069, liq:0.0069, rl:2.0e7, tauEvap:90, tauCond:900};
+let P=PRODUCTS.propaan;
+const st={};
+const fmt=(v,d=1)=>(+v).toFixed(d).replace('.',',');
+
+const sq=x=>x*x;
+const rhoL=T=>P.rho20*(1-P.beta*(T-293.15));
+const psat=T=>ATM*Math.exp(P.B*(1/P.Tb-1/T));
+const rhoV=(p,T)=>p*(P.M/1000)/(R*T);
+const vol=x=>x.mL/rhoL(x.T);
+const fill=x=>vol(x)/x.V;
+const ullage=x=>Math.max(0.2,x.V-vol(x));
+const pres=x=>x.mV*R*x.T/((P.M/1000)*ullage(x));
+const C=x=>x.mL*P.cp+x.Cs;
+function hFrac(f){f=Math.min(1,Math.max(0,f));let a=0,b=2*Math.PI;for(let i=0;i<36;i++){const m=(a+b)/2;if((m-Math.sin(m))/(2*Math.PI)<f)a=m;else b=m;}return (1-Math.cos((a+b)/4))/2;}
+const levelH=x=>x.shape==='h'?x.D*hFrac(fill(x)):x.H*fill(x);
+const bottomP=x=>pres(x)+rhoL(x.T)*G*levelH(x);
+const isOpen=(t,l)=>st.valves[t][l].h&&st.valves[t][l].c;
+const shoreOpen=l=>{const m=st.mv[l.mv];return m.h&&m.c&&m.hose&&st.link.ok;};
+const cargoOps=()=>LINES.some(l=>shoreOpen(l))||st.pumps.some(Boolean)||st.comp.run||st.shorePump;
+
+function mkTank(name,V,f,Tc,o){const T=Tc+273.15;const x={name,V,T,...o};x.mL=f*V*rhoL(T);x.mV=psat(T)*(P.M/1000)*V*(1-f)/(R*T);return x;}
+function log(level,text){st.log.unshift({t:st.t,level,text});if(st.log.length>100)st.log.pop();st.dirty=true;}
+function trip(msg){if(st.comp.run){st.comp.run=false;st.comp.trip=msg;log('alarm',msg);}}
+function stopPumps(why){if(st.pumps.some(Boolean)){st.pumps=st.pumps.map(()=>false);log('info','Lospompen uitgeschakeld'+(why?': '+why:''));}}
+function tripLink(cause){
+  if(st.link.ok){st.link.ok=false;st.link.cause=cause;log('alarm',`Schip-walsignaal onderbroken door ${cause}: wal stopt en sluit af`);}
+  if(st.shorePump){st.shorePump=false;log('info','Walpomp gestopt door de wal');}
+  stopPumps();
+}
+const linkBlock=()=>[...st.alarms.entries()].filter(([k,a])=>a.active&&(/^ovf|^p\d/.test(k))).map(([,a])=>a.text);
+function resetLink(){
+  if(st.link.ok)return;
+  const b=linkBlock();
+  if(b.length){log('info','Herstellen niet mogelijk zolang actief: '+b.join(', '));return;}
+  st.link.ok=true;st.link.cause='';st.esd=false;log('info','Schip-walsignaal hersteld');
+}
+
+function reset(prodKey,mode){
+  P=PRODUCTS[prodKey];
+  st.t=0; st.mode=mode; st.log=[]; st.alarms=new Map(); st.flow={}; st.hp={}; st.flags={}; st.tests={}; st.vented=0; st.rate=0; st.dirty=true;
+  const laden=mode==='laden';
+  st.tanks=Array.from({length:NT},(_,i)=>mkTank('T'+(i+1),TANK_V,(laden?0.03:0.90)+(laden?1:-1)*(i%3)*0.003,laden?S.Tamb-3:S.Tamb,{shape:'h',D:TANK_D,Cs:4.7e7,UA:2000}));
+  st.shore=mkTank('Wal',8000,laden?0.6:0.2,laden?S.Tamb:S.Tamb-4,{shape:'v',H:14,Cs:4e8,UA:8000});
+  st.valves=Array.from({length:NT},()=>Object.fromEntries(LINES.map(l=>[l.id,{h:false,c:false}])));
+  st.mv=Object.fromEntries(LINES.map(l=>[l.mv,{h:false,c:false,hose:false}]));
+  st.pumps=Array(NT).fill(false); st.pinfo=Array.from({length:NT},()=>({pin:NaN,pout:NaN,q:0}));
+  st.link={ok:true,cause:''}; st.dead=Array(NT).fill(0); st.shoreHold=false; st.esd=false;
+  st.comp={run:false,trip:'',ps:NaN,pd:NaN,m:0,Ts:288,Td:288,r:1};
+  st.shorePump=false;
+  log('info',`Nieuwe situatie: ${laden?'laden':'lossen'}, ${P.name.toLowerCase()}`);
+}
+
+function solveNode(fns,extra,lo,hi){
+  const F=ph=>{let s=extra?extra(ph):0;for(const f of fns)s+=f(ph);return s;};
+  const Fa=F(lo); if(Fa<=0) return {ph:lo,res:Fa};
+  const Fb=F(hi); if(Fb>=0) return {ph:hi,res:Fb};
+  let a=lo,b=hi; for(let i=0;i<60;i++){const m=(a+b)/2;if(F(m)>0)a=m;else b=m;}
+  return {ph:(a+b)/2,res:0};
+}
+function gasF(pe,T,ph){const d=pe-ph;return K.gas*Math.sign(d)*Math.sqrt(Math.abs(d)*rhoV(d>0?pe:ph,T));}
+function liqF(pb,ph,rho,canOut){const d=pb-ph;if(d>0&&!canOut)return 0;return K.liq*Math.sign(d)*Math.sqrt(Math.abs(d)/rho);}
+function shoreLiqF(ps,ph){
+  if(st.shorePump){const a=ps+S.shoreDp*1e5-ph;return a>0?Math.sqrt(a/(S.shoreDp*1e5/sq(S.shoreQ/3600)+K.rl)):0;}
+  const d=ps-ph;return K.liq*Math.sign(d)*Math.sqrt(Math.abs(d)/rhoL(st.shore.T));
+}
+function mixT(br,fl,base){let w=base?base[0]:0,s=base?base[0]*base[1]:0;fl.forEach((f,i)=>{if(f>0){w+=f;s+=f*br[i].ref.T;}});return w>0?s/w:null;}
+function applyGas(br,fl,Tm,dt){br.forEach((b,i)=>{const f=fl[i],x=b.ref;if(f>0)x.mV=Math.max(1e-3,x.mV-f*dt);else if(f<0){const dm=-f*dt;x.T+=dm*P.cpv*(Tm-x.T)/C(x);x.mV+=dm;}});}
+function applyLiq(br,fl,Tm,dt){br.forEach((b,i)=>{const q=fl[i],x=b.ref;if(q>0)x.mL=Math.max(0,x.mL-q*rhoL(x.T)*dt);else if(q<0){const dm=-q*rhoL(Tm)*dt,Cx=C(x);x.T=(Cx*x.T+dm*P.cp*Tm)/(Cx+dm*P.cp);x.mL+=dm;}});}
+function phase(x,dt){const mEq=psat(x.T)*(P.M/1000)*ullage(x)/(R*x.T);const d=mEq-x.mV;let dm=d*Math.min(1,dt/(d>0?K.tauEvap:K.tauCond));if(dm>0)dm=Math.min(dm,x.mL);x.mV+=dm;x.mL-=dm;x.T-=dm*P.L/C(x);}
+
+function step(dt){
+  const T=st.tanks,sh=st.shore,c=st.comp;
+  st.flow={}; st.flags={};
+  if(!st.link.ok&&st.shorePump)st.shorePump=false;
+  const pT=T.map(pres),pS=pres(sh),pbT=T.map(bottomP),pbS=bottomP(sh);
+  const gasBr=l=>{const br=[];T.forEach((x,i)=>{if(isOpen(i,l.id))br.push({ref:x,key:i+'-'+l.id,p:pT[i]});});
+    if(shoreOpen(l))br.push({ref:sh,key:'sh-'+l.id,p:pS,shore:true});br.forEach(b=>b.fn=ph=>gasF(b.p,b.ref.T,ph));return br;};
+  const Ls=LINES.find(l=>l.role==='suction'),Ld=LINES.find(l=>l.role==='discharge');
+  const bs=gasBr(Ls),bd=gasBr(Ld);
+  if(c.run&&!bs.length)trip('Compressor gestopt: geen open zuigleiding');
+  if(c.run&&!bd.length)trip('Compressor gestopt: geen open persleiding');
+  let Ts=bs.length?bs.reduce((a,b)=>a+b.ref.T,0)/bs.length:c.Ts, mc=0;
+  const etav=Math.max(0.15,1-0.05*(Math.pow(c.r,1/P.k)-1));
+  const mcAt=ph=>rhoV(ph,Ts)*S.compQ/3600*etav;
+  c.ps=NaN; st.hp[Ls.id]=NaN;
+  if(bs.length){
+    const sol=solveNode(bs.map(b=>b.fn),c.run?ph=>-mcAt(ph):null,0.05e5,Math.max(...bs.map(b=>b.p))+1e4);
+    const fl=bs.map(b=>b.fn(sol.ph));
+    if(c.run)mc=sol.res<0?Math.max(0,fl.reduce((a,b)=>a+b,0)):mcAt(sol.ph);
+    c.ps=sol.ph; st.hp[Ls.id]=sol.ph;
+    const Tm=mixT(bs,fl); if(Tm)Ts=Tm;
+    applyGas(bs,fl,Tm||Ts,dt); bs.forEach((b,i)=>st.flow[b.key]=-fl[i]);
+  }
+  let Td=Ts; c.pd=NaN; st.hp[Ld.id]=NaN;
+  if(bd.length){
+    const sol=solveNode(bd.map(b=>b.fn),mc>0?()=>mc:null,0.05e5,Math.max(...bd.map(b=>b.p))+45e5);
+    const fl=bd.map(b=>b.fn(sol.ph));
+    c.pd=sol.ph; st.hp[Ld.id]=sol.ph;
+    if(mc>0&&isFinite(c.ps)){c.r=Math.max(1,c.pd/c.ps);Td=Ts*(1+(Math.pow(c.r,(P.k-1)/P.k)-1)/0.75);}
+    const Tm=mixT(bd,fl,[mc,Td])||Td;
+    applyGas(bd,fl,Tm,dt); bd.forEach((b,i)=>st.flow[b.key]=-fl[i]);
+  }
+  if(!c.run)c.r=1;
+  c.m=mc; c.Ts=Ts; c.Td=c.run?Td:Ts;
+  if(c.run){
+    if(c.ps<S.minPs*1e5)trip('Compressor gestopt: lage zuigdruk');
+    else if(c.pd-ATM>S.maxPd*1e5)trip('Compressor gestopt: hoge persdruk');
+  }
+  LINES.filter(l=>l.kind==='gas'&&!l.role).forEach(l=>{const br=gasBr(l);st.hp[l.id]=NaN;if(!br.length)return;
+    const sol=solveNode(br.map(b=>b.fn),null,0.05e5,Math.max(...br.map(b=>b.p))+1e4);const fl=br.map(b=>b.fn(sol.ph));
+    st.hp[l.id]=sol.ph;applyGas(br,fl,mixT(br,fl)||288,dt);br.forEach((b,i)=>st.flow[b.key]=-fl[i]);});
+  // vloeistof met diepwellpompen per tank
+  T.forEach((x,i)=>{st.pinfo[i]={pin:pbT[i],pout:NaN,q:0};
+    if(st.pumps[i]&&vol(x)<=x.V*S.pumpMin/100){st.pumps[i]=false;log('alarm',`${x.name}: lospomp verliest zuiging, uitgeschakeld`);}});
+  LINES.filter(l=>l.kind==='liquid').forEach(l=>{
+    const br=[];let anyPump=false;
+    T.forEach((x,i)=>{if(!isOpen(i,l.id))return;const rho=rhoL(x.T),can=vol(x)>0.3,b={ref:x,key:i+'-'+l.id,p:pbT[i],ti:i};
+      if(l.pumps&&st.pumps[i]){anyPump=true;const dp0=S.pumpDp*1e5,a=dp0/sq(S.pumpQ/3600)+rho/sq(K.liq);b.pump=true;b.fn=ph=>{const d=b.p+dp0-ph;return d>0?Math.sqrt(d/a):0;};}
+      else b.fn=ph=>liqF(b.p,ph,rho,can);
+      br.push(b);});
+    let sb=null;
+    if(shoreOpen(l)){sb={ref:sh,key:'sh-'+l.id,p:pbS,shore:true};sb.fn=l.pumps?ph=>shoreLiqF(pbS,ph):ph=>liqF(pbS,ph,rhoL(sh.T),true);br.push(sb);}
+    st.hp[l.id]=NaN; if(!br.length)return;
+    const hi=Math.max(...br.map(b=>b.p))+Math.max(l.pumps&&st.shorePump?S.shoreDp*1e5:0,anyPump?S.pumpDp*1e5:0)+2e5;
+    const sol=solveNode(br.map(b=>b.fn),null,0,hi);
+    const fl=br.map(b=>b.fn(sol.ph));
+    if(sol.res!==0&&sb){const j=br.indexOf(sb);let s=0;fl.forEach((f,i)=>{if(i!==j)s+=f;});fl[j]=-s;}
+    st.hp[l.id]=sol.ph;
+    br.forEach((b,i)=>{if(b.pump){st.pinfo[b.ti].pout=sol.ph;st.pinfo[b.ti].q=fl[i];}});
+    const Tm=mixT(br,fl)||288;
+    applyLiq(br,fl,Tm,dt); br.forEach((b,i)=>st.flow[b.key]=-fl[i]);
+  });
+  T.forEach((x,i)=>{
+    if(!st.pumps[i]){st.dead[i]=0;return;}
+    const shut=pbT[i]+S.pumpDp*1e5,pi=st.pinfo[i];pi.pout=isFinite(pi.pout)?Math.min(pi.pout,shut):shut;
+    if(pi.q<2e-4){st.dead[i]+=dt;if(st.dead[i]>=600){st.pumps[i]=false;st.dead[i]=0;log('alarm',`${x.name}: lospomp uitgeschakeld, te lang zonder doorstroming`);}}
+    else st.dead[i]=0;});
+  if(st.shoreHold&&st.pumps.some(Boolean))stopPumps('de wal houdt het lossen tegen');
+  [...T,sh].forEach(x=>{phase(x,dt);x.T+=x.UA*(S.Tamb+273.15-x.T)*dt/C(x);});
+  T.forEach(x=>{const p=pres(x),set=ATM+S.relief*1e5;
+    if(p>set){const mT=set*0.97*(P.M/1000)*ullage(x)/(R*x.T);const v=Math.max(0,(x.mV-mT)*Math.min(1,dt/4));x.mV-=v;st.vented+=v;
+      if(!x.venting){x.venting=true;log('alarm',`${x.name}: veiligheidsklep blaast af via de mast`);}}
+    else if(p<set*0.95)x.venting=false;});
+  let toShore=0; LINES.forEach(l=>{const f=st.flow['sh-'+l.id]||0;toShore+=l.kind==='liquid'?f*rhoL(sh.T):f;});
+  st.rate+=(-toShore*3.6-st.rate)*Math.min(1,dt/20);
+  st.t+=dt;
+}
+
+// alarmen met hysterese en bevestiging
+function al(key,on,off,level,kind,text,onTrig){
+  const a=st.alarms.get(key);
+  if(on&&(!a||!a.active)){if(a){a.active=true;a.ack=false;a.t=st.t;a.text=text;}else st.alarms.set(key,{level,kind,text,active:true,ack:false,t:st.t});log(level,text);if(onTrig)onTrig();}
+  else if(a&&a.active&&off){a.active=false;if(a.ack)st.alarms.delete(key);st.dirty=true;}
+}
+function ackAll(){for(const [k,a] of st.alarms){a.ack=true;if(!a.active)st.alarms.delete(k);}st.dirty=true;}
+function evalAlarms(){
+  const now=Date.now(),test=k=>(st.tests[k]||0)>now;
+  st.tanks.forEach((x,i)=>{const f=fill(x)*100,pg=(pres(x)-ATM)/1e5,tc=x.T-273.15;
+    al('lvl'+i,f>=S.lvlAlarm||test('lvl'+i),f<S.lvlAlarm-0.5&&!test('lvl'+i),'warn','niveau',`${x.name}: niveau-alarm ${fmt(S.lvlAlarm,0)}%`);
+    al('max'+i,f>S.maxFill,f<S.maxFill-0.2,'warn','proces',`${x.name}: boven max. vullingsgraad ${fmt(S.maxFill,0)}%`);
+    al('ovf'+i,f>=S.overfill||test('ovf'+i),f<S.overfill-0.5&&!test('ovf'+i),'alarm','overvul',`${x.name}: overvulbeveiliging ${fmt(S.overfill)}%`,()=>tripLink('overvulbeveiliging '+x.name));
+    al('p'+i,pg>=pAlarm(),pg<pAlarm()-0.3,'alarm','druk',`${x.name}: drukalarm ${fmt(pAlarm())} bar`,()=>{if(cargoOps())tripLink('drukalarm '+x.name);});
+    al('t'+i,tc>=S.tAlarm,tc<S.tAlarm-1,'alarm','temp',`${x.name}: temperatuuralarm ${fmt(S.tAlarm,0)} °C`);
+    al('lp'+i,pg<=S.lowP,pg>S.lowP+0.1,'warn','proces',`${x.name}: lage tankdruk`);
+    al('dh'+i,st.dead[i]>=120,st.dead[i]<120,'warn','proces',`Lospomp ${x.name} draait al 2 min zonder doorstroming (${isOpen(i,'vl')?'geen afvoer: wal of andere tank dicht':'afsluiter vloeistof dicht'})`);
+  });
+  const ovf=st.tanks.findIndex((_,i)=>st.alarms.get('ovf'+i)?.active),pa=st.tanks.findIndex((_,i)=>st.alarms.get('p'+i)?.active);
+  if(ovf>=0&&(st.pumps.some(Boolean)||st.shorePump))tripLink('overvulbeveiliging T'+(ovf+1));
+  if(pa>=0&&cargoOps())tripLink('drukalarm T'+(pa+1));
+  const vl=LINES.find(l=>l.pumps),anyVl=st.tanks.some((_,i)=>isOpen(i,vl.id)),dead=st.shorePump&&(!shoreOpen(vl)||!anyVl);
+  al('wdead',dead,!dead,'warn','proces','Walpomp draait tegen gesloten afsluiters');
+}
+const onboard=()=>st.tanks.reduce((a,x)=>a+x.mL+x.mV,0)/1000;
+// ===== INTERFACE =====
+const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,a={},p){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+const nl=(v,d=1)=>isFinite(v)?v.toFixed(d).replace('.',','):'–';
+const barg=p=>nl((p-ATM)/1e5,1);
+const W=380,COL0=22,COLD=30,TOP=160,SHX=252,MVH=184,MVC=212,HOSEX=228,COMPY=92;
+const NL=LINES.length,colX=i=>COL0+COLD*i,LAST=colX(NL-1);
+const VH=LAST+28,VC=LAST+58,TX=LAST+80,TW=W-6-TX,BODY=18*(NL-1)+20,RH=BODY+18,HTOT=TOP+NT*RH+8;
+const rowY=t=>TOP+t*RH, brY=(t,li)=>rowY(t)+18+18*li, cyT=t=>rowY(t)+8+BODY/2;
+const iS=LINES.findIndex(l=>l.role==='suction'),iD=LINES.findIndex(l=>l.role==='discharge');
+const CX=(colX(iS)+colX(iD))/2;
+const lineTop=l=>Math.min(l.shoreY,l.role?COMPY:Infinity);
+const ref={tanks:[],valves:[],br:{},sr:{},hose:{},marks:[]};
+let sel=0;
+
+function valveG(parent,x,y,spec,kind,label){
+  const g=el('g',{class:'valve','data-v':spec,tabindex:0,role:'button','aria-label':label},parent);
+  if(kind==='c'){el('line',{x1:x,y1:y,x2:x,y2:y-6,class:'stem'},g);el('rect',{x:x-4,y:y-10,width:8,height:4,class:'act'},g);}
+  else{el('line',{x1:x,y1:y,x2:x,y2:y-7,class:'stem'},g);el('line',{x1:x-4,y1:y-7,x2:x+4,y2:y-7,class:'stem'},g);}
+  el('path',{d:`M${x-7} ${y-5}L${x+7} ${y+5}L${x+7} ${y-5}L${x-7} ${y+5}Z`,class:'body'},g);
+  el('rect',{x:x-12,y:y-11,width:24,height:18,class:'hit'},g);
+  ref.valves.push({g,spec});return g;
+}
+function buildSVG(){
+  const svg=$('#pid');svg.setAttribute('viewBox',`0 0 ${W} ${HTOT}`);svg.innerHTML='';
+  const defs=el('defs',{},svg),gB=el('g',{},svg),gC=el('g',{},svg),gS=el('g',{},svg),gO=el('g',{},svg);
+  for(let t=0;t<NT;t++)LINES.forEach((l,li)=>{
+    const y=brY(t,li),dy=y-cyT(t),rx=BODY/2,ex=TX+rx-Math.sqrt(Math.max(0,rx*rx-dy*dy)),d=`M${colX(li)} ${y}H${ex}`;
+    el('path',{d,class:'halo'},gB);ref.br[t+'-'+l.id]=el('path',{d,class:'ln',stroke:l.color},gB);
+    el('circle',{cx:colX(li),cy:y,r:3,fill:l.color},gO);
+    valveG(gO,VH,y,`t:${t}:${l.id}:h`,'h',`T${t+1} ${l.name} handafsluiter`);
+    valveG(gO,VC,y,`t:${t}:${l.id}:c`,'c',`T${t+1} ${l.name} snelsluiter`);
+  });
+  LINES.forEach((l,li)=>{const d=`M${colX(li)} ${lineTop(l)}V${brY(NT-1,li)}`;el('path',{d,class:'halo'},gC);el('path',{d,class:'ln',stroke:l.color},gC);});
+  LINES.forEach((l,li)=>{
+    const y=l.shoreY,d=`M${colX(li)} ${y}H${HOSEX}`;el('path',{d,class:'halo'},gS);ref.sr[l.id]=el('path',{d,class:'ln',stroke:l.color},gS);
+    if(y>lineTop(l))el('circle',{cx:colX(li),cy:y,r:3,fill:l.color},gO);
+    el('text',{x:LAST+10,y:y-5,class:'lbl'},gO).textContent=l.run;
+    valveG(gO,MVH,y,`mv:${l.mv}:h`,'h',`Walaansluiting ${MV_NAMES[l.mv]} afsluiter`);
+    valveG(gO,MVC,y,`mv:${l.mv}:c`,'c',`Walaansluiting ${MV_NAMES[l.mv]} snelsluiter`);
+    const g=el('g',{class:'hosebox','data-hose':l.mv,tabindex:0,role:'button','aria-label':`Slang ${MV_NAMES[l.mv]}`},gO);
+    const hl=el('path',{d:`M${HOSEX} ${y}C${HOSEX+8} ${y+7} ${SHX-8} ${y-7} ${SHX} ${y}`,class:'hose',stroke:l.color},g);
+    const bf=el('rect',{x:HOSEX-1,y:y-7,width:4,height:14,class:'blind'},g);
+    el('rect',{x:HOSEX-2,y:y-11,width:SHX-HOSEX+2,height:22,class:'hit'},g);
+    ref.hose[l.mv]={hl,bf};
+  });
+  el('text',{x:(MVH+MVC)/2,y:13,class:'lbl','text-anchor':'middle'},gO).textContent='walaansluiting';
+  ref.comp=el('g',{class:'comp','data-act':'comp',tabindex:0,role:'button','aria-label':'Compressor'},gO);
+  el('path',{d:`M${colX(iS)} ${COMPY}H${CX-11}M${CX+11} ${COMPY}H${colX(iD)}`,class:'ln',stroke:'var(--line)'},ref.comp);
+  el('circle',{cx:CX,cy:COMPY,r:11,class:'cbody'},ref.comp);
+  el('path',{d:`M${CX-8} ${COMPY-7}L${CX+8} ${COMPY-3}M${CX-8} ${COMPY+7}L${CX+8} ${COMPY+3}`,class:'cmark'},ref.comp);
+  el('rect',{x:CX-15,y:COMPY-15,width:30,height:30,class:'hit'},ref.comp);
+  el('circle',{cx:colX(iD),cy:COMPY,r:3,fill:LINES[iD].color},gO);
+  el('text',{x:CX,y:COMPY+24,class:'lbl','text-anchor':'middle'},gO).textContent='compressor';
+  const gw=el('g',{},gO);el('rect',{x:SHX,y:8,width:W-6-SHX,height:142,rx:6,class:'shore'},gw);
+  el('text',{x:SHX+10,y:27,class:'st b'},gw).textContent='Walterminal';
+  ref.wf=el('text',{x:SHX+10,y:50,class:'st big'},gw);ref.wp=el('text',{x:SHX+10,y:69,class:'st'},gw);
+  ref.wt=el('text',{x:SHX+10,y:86,class:'st m'},gw);ref.wpump=el('text',{x:SHX+10,y:106,class:'st'},gw);
+  ref.wlink=el('text',{x:SHX+10,y:124,class:'st'},gw);el('text',{x:SHX+10,y:141,class:'st m'},gw).textContent='8000 m³';
+  el('rect',{x:W-24,y:20,width:12,height:118,rx:2,class:'gauge'},gw);ref.wl=el('rect',{x:W-24,y:20,width:12,height:0,rx:2,class:'liq'},gw);
+  el('text',{x:VH,y:TOP+3,class:'lbl','text-anchor':'middle'},gO).textContent='hand';
+  el('text',{x:VC,y:TOP+3,class:'lbl','text-anchor':'middle'},gO).textContent='snel';
+  for(let t=0;t<NT;t++){
+    const y0=rowY(t)+8,cy=cyT(t),g=el('g',{class:'tank','data-tank':t,tabindex:0,role:'button','aria-label':'Tank '+(t+1)},gO);
+    const cp=el('clipPath',{id:'cl'+t},defs);el('rect',{x:TX,y:y0,width:TW,height:BODY,rx:BODY/2},cp);
+    el('rect',{x:TX,y:y0,width:TW,height:BODY,rx:BODY/2,class:'tankbody'},g);
+    const lq=el('rect',{x:TX,y:y0,width:TW,height:0,class:'liq','clip-path':`url(#cl${t})`},g);
+    const mk={};[['lvl','m86'],['max','m91'],['ovf','m975']].forEach(([k,c])=>{mk[k]=el('line',{x1:TX,x2:TX+TW,class:'mark '+c,'clip-path':`url(#cl${t})`},g);});
+    el('rect',{x:TX,y:y0,width:TW,height:BODY,rx:BODY/2,class:'tankline'},g);
+    el('text',{x:TX+BODY/2+8,y:cy+5,class:'tt id'},g).textContent='T'+(t+1);
+    const f=el('text',{x:TX+BODY/2+42,y:cy+5,class:'tt big'},g);
+    const p=el('text',{x:TX+TW-BODY/2-2,y:cy-2,class:'tt','text-anchor':'end'},g);
+    const tc=el('text',{x:TX+TW-BODY/2-2,y:cy+13,class:'tt m','text-anchor':'end'},g);
+    const pg=el('g',{class:'pump','data-pump':t,tabindex:0,role:'button','aria-label':`Lospomp T${t+1}`},gO),px=TX+15,py=cy+12;
+    el('circle',{cx:px,cy:py,r:7,class:'pbody'},pg);el('path',{d:`M${px-3} ${py-4}L${px+4} ${py}L${px-3} ${py+4}Z`,class:'ptri'},pg);
+    el('rect',{x:px-11,y:py-11,width:22,height:22,class:'hit'},pg);
+    ref.tanks.push({g,lq,f,p,tc,y0,mk,pg});
+  }
+}
+function placeMarks(){ref.tanks.forEach(r=>{[['lvl',S.lvlAlarm],['max',S.maxFill],['ovf',S.overfill]].forEach(([k,v])=>{const y=r.y0+BODY*(1-hFrac(v/100));r.mk[k].setAttribute('y1',y);r.mk[k].setAttribute('y2',y);});});}
+
+// ---- paneel ----
+function buildPanel(){
+  $('#central').innerHTML=LINES.map(l=>`<div class="crow"><span class="lname"><i style="background:${l.color}"></i>${l.name}</span><button data-all="${l.id}:1">Alle open</button><button data-all="${l.id}:0">Alle dicht</button></div>`).join('');
+  $('#tabs').innerHTML=Array.from({length:NT},(_,i)=>`<button data-tank="${i}">T${i+1}</button>`).join('');
+}
+function renderSel(){
+  $('#selTitle').textContent='Tank '+(sel+1);
+  const on=st.pumps[sel];
+  $('#pumpBtn').textContent='Lospomp '+(on?'aan':'uit');$('#pumpBtn').classList.toggle('on',on);
+  $('#selValves').innerHTML=LINES.map(l=>{const v=st.valves[sel][l.id],o=v.h&&v.c;
+    return `<div class="vrow"><span class="lname"><i style="background:${l.color}"></i>${l.name}<small>${o?'doorlaat open':'doorlaat dicht'}</small></span>
+    <button class="${v.h?'on':''}" data-v="t:${sel}:${l.id}:h">Hand ${v.h?'open':'dicht'}</button>
+    <button class="${v.c?'on':''}" data-v="t:${sel}:${l.id}:c">Snel ${v.c?'open':'dicht'}</button></div>`;}).join('');
+  $('#mvRows').innerHTML=LINES.map(l=>{const m=st.mv[l.mv];
+    return `<div class="mrow"><span class="lname"><i style="background:${l.color}"></i>${MV_NAMES[l.mv]}<small>${m.hose?'slang aangesloten':'blindflens'}</small></span>
+    <button class="${m.hose?'on':''}" data-hose="${l.mv}">${m.hose?'Slang':'Blind'}</button>
+    <button class="${m.h?'on':''}" data-v="mv:${l.mv}:h">Hand ${m.h?'open':'dicht'}</button>
+    <button class="${m.c?'on':''}" data-v="mv:${l.mv}:c">Snel ${m.c?'open':'dicht'}</button></div>`;}).join('');
+  document.querySelectorAll('#tabs button').forEach((b,i)=>b.classList.toggle('sel',i===sel));
+}
+function toggleSpec(spec){
+  const s=spec.split(':');
+  if(s[0]==='mv'){if(s[2]==='c'&&!st.mv[s[1]].c&&st.esd){log('info','Snelsluiter blijft dicht tot na Herstellen van de noodstop');st.dirty=true;return;}st.mv[s[1]][s[2]]=!st.mv[s[1]][s[2]];}
+  else{const v=st.valves[+s[1]][s[2]];v[s[3]]=!v[s[3]];}
+  st.dirty=true;
+}
+function toggleHose(mv){
+  const m=st.mv[mv];
+  if(m.h||m.c){log('info',`Eerst afsluiter en snelsluiter ${MV_NAMES[mv].toLowerCase()} sluiten`);return;}
+  m.hose=!m.hose;log('info',`${MV_NAMES[mv]}: ${m.hose?'slang aangesloten':'slang los, blindflens erop'}`);
+}
+function act(a){
+  const c=st.comp;
+  if(a==='comp'){if(c.run){c.run=false;c.trip='';log('info','Compressor gestopt');}else{c.run=true;c.trip='';c.r=1;log('info','Compressor gestart');}}
+  if(a==='shorePump'){if(st.shorePump){st.shorePump=false;log('info','Walpomp gestopt');}else if(!st.link.ok)log('info','Wal start niet: schip-walsignaal is onderbroken');else{st.shorePump=true;log('info','Walpomp gestart');}}
+  if(a==='pump')togglePump(sel);
+  if(a==='allPumpsOff')stopPumps('alle pompen uit');
+  if(a==='linkReset')resetLink();
+  if(a==='shoreStop'){st.shoreHold=!st.shoreHold;if(st.shoreHold){log('info','Wal onderbreekt het lossen (9.3.1.21.5 b)');stopPumps('signaal van de wal');}else log('info','Wal geeft het lossen weer vrij');}
+  if(a==='esdFwd'||a==='esdAft'){const w=a==='esdFwd'?'voor':'achter';
+    Object.values(st.mv).forEach(m=>m.c=false);st.esd=true;stopPumps();if(c.run){c.run=false;c.trip='Noodstop '+w;}tripLink('noodstop '+w);
+    log('alarm',`Noodstop ${w}: snelsluiters walaansluiting dicht, pompen en compressor uit`);}
+  if(a==='stopZone'||a==='stopWheel'){stopPumps();if(c.run){c.run=false;c.trip='';}log('info',`Pompen en compressor uitgeschakeld ${a==='stopZone'?'in de ladingzone':'buiten de ladingzone (stuurhuis)'}`);}
+  if(a==='closeTanks'){st.valves.forEach(v=>LINES.forEach(l=>v[l.id].c=false));log('info','Alle snelsluiters van de tanks dicht');}
+  if(a==='testLvl'){st.tests['lvl'+sel]=Date.now()+5000;log('info',`T${sel+1}: test niveau-alarm`);}
+  if(a==='testOvf'){st.tests['ovf'+sel]=Date.now()+5000;log('info',`T${sel+1}: test overvulbeveiliging`);}
+  if(a==='ack')ackAll();
+  if(a==='mute'){muted=!muted;}
+  st.dirty=true;
+}
+function togglePump(t){
+  if(st.pumps[t]){st.pumps[t]=false;log('info',`Lospomp T${t+1} uit`);}
+  else if(st.tanks.some((_,i)=>st.alarms.get('ovf'+i)?.active))log('info',`Lospomp T${t+1} start niet: overvulbeveiliging actief`);
+  else if(st.shoreHold)log('info',`Lospomp T${t+1} start niet: de wal houdt het lossen tegen`);
+  else if(st.tanks.some((_,i)=>st.alarms.get('p'+i)?.active))log('info',`Lospomp T${t+1} start niet: drukalarm actief`);
+  else if(vol(st.tanks[t])<=TANK_V*S.pumpMin/100)log('info',`Lospomp T${t+1} start niet: te weinig vloeistof`);
+  else{st.pumps[t]=true;log('info',`Lospomp T${t+1} aan`);}
+  st.dirty=true;
+}
+document.addEventListener('click',e=>{
+  ensureAudio();
+  const v=e.target.closest('[data-v]');if(v){toggleSpec(v.dataset.v);return;}
+  const h=e.target.closest('[data-hose]');if(h){toggleHose(h.dataset.hose);st.dirty=true;return;}
+  const pu=e.target.closest('[data-pump]');if(pu){sel=+pu.dataset.pump;togglePump(sel);return;}
+  const a=e.target.closest('[data-act]');if(a){act(a.dataset.act);return;}
+  const all=e.target.closest('[data-all]');if(all){const[l,o]=all.dataset.all.split(':');st.valves.forEach(v=>v[l].c=o==='1');st.dirty=true;return;}
+  const tk=e.target.closest('[data-tank]');if(tk){sel=+tk.dataset.tank;st.dirty=true;return;}
+});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('svg [role=button]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+
+// ---- geluid: onderscheidbare signalen (9.3.1.21.6) ----
+let actx=null,osc=null,gain=null,muted=false;
+function ensureAudio(){if(actx)return;try{actx=new (window.AudioContext||window.webkitAudioContext)();osc=actx.createOscillator();gain=actx.createGain();osc.type='square';gain.gain.value=0;osc.connect(gain).connect(actx.destination);osc.start();}catch(e){actx=null;}}
+const PRIO=['overvul','druk','temp','niveau','proces'];
+function topAlarm(unackOnly){let best=null;for(const a of st.alarms.values()){if(unackOnly&&a.ack)continue;if(!best||PRIO.indexOf(a.kind)<PRIO.indexOf(best.kind))best=a;}return best;}
+setInterval(()=>{
+  if(!actx)return;const a=topAlarm(true);let f=0,on=false;const t=performance.now();
+  if(a&&!muted){
+    if(a.kind==='overvul'){on=t%300<150;f=1100;}
+    else if(a.kind==='druk'||a.kind==='temp'){on=true;f=(t%700<350)?650:900;}
+    else if(a.kind==='niveau'){on=t%1000<500;f=750;}
+    else{on=t%2000<150;f=520;}
+  }
+  if(on)osc.frequency.setValueAtTime(f,actx.currentTime);
+  gain.gain.setTargetAtTime(on?0.05:0,actx.currentTime,0.005);
+},40);
+
+let speed=60,running=true;
+function bindControls(){
+  $('#speed').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;speed=+b.dataset.s;document.querySelectorAll('#speed button').forEach(x=>x.classList.toggle('sel',x===b));});
+  $('#pause').addEventListener('click',()=>{running=!running;$('#pause').textContent=running?'Pauze':'Verder';$('#pause').classList.toggle('on',!running);});
+  $('#btnLaden').addEventListener('click',()=>{reset($('#prod').value,'laden');sel=0;});
+  $('#btnLossen').addEventListener('click',()=>{reset($('#prod').value,'lossen');sel=0;});
+  $('#prod').addEventListener('change',()=>reset($('#prod').value,st.mode));
+  $('#clearLog').addEventListener('click',()=>{st.log=[];st.dirty=true;});
+  document.querySelectorAll('[data-set]').forEach(inp=>{inp.value=S[inp.dataset.set];inp.addEventListener('input',()=>{const v=parseFloat(inp.value);if(isFinite(v)){S[inp.dataset.set]=v;placeMarks();}});});
+}
+function fmtTime(t){const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.floor(t%60);return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+const KIND_TXT={overvul:'Overvulbeveiliging',druk:'Drukalarm',temp:'Temperatuuralarm',niveau:'Niveau-alarm',proces:'Melding'};
+
+function render(){
+  const c=st.comp;
+  st.tanks.forEach((x,t)=>{const r=ref.tanks[t],f=fill(x),hf=hFrac(f),pg=(pres(x)-ATM)/1e5;
+    r.lq.setAttribute('y',r.y0+BODY*(1-hf));r.lq.setAttribute('height',BODY*hf);
+    r.f.textContent=nl(f*100,0)+'%';r.p.textContent=nl(pg)+' bar';r.tc.textContent=nl(x.T-273.15,0)+' °C';
+    const A=k=>st.alarms.get(k+t),act=k=>A(k)?.active,un=k=>A(k)&&!A(k).ack;
+    const al=!!(act('ovf')||act('p')||act('t')||x.venting),wa=!!(act('lvl')||act('max')||act('lp'));
+    r.g.classList.toggle('alarm',al);r.g.classList.toggle('warn',!al&&wa);r.g.classList.toggle('sel',t===sel);
+    r.g.classList.toggle('blink',['ovf','p','t','lvl','max'].some(k=>!!un(k)));
+    r.pg.classList.toggle('run',st.pumps[t]);});
+  ref.valves.forEach(({g,spec})=>{const s=spec.split(':');const o=s[0]==='mv'?st.mv[s[1]][s[2]]:st.valves[+s[1]][s[2]][s[3]];g.classList.toggle('open',o);});
+  const flowCls=(e,f,thr)=>{const on=Math.abs(f||0)>thr;e.classList.toggle('flow',on);e.classList.toggle('rev',on&&f<0);};
+  for(const k in ref.br){const [t,id]=k.split('-'),l=LINES.find(z=>z.id===id);flowCls(ref.br[k],st.flow[k],l.kind==='liquid'?3e-4:0.01);ref.br[k].classList.toggle('live',isOpen(+t,id));}
+  LINES.forEach(l=>{flowCls(ref.sr[l.id],st.flow['sh-'+l.id],l.kind==='liquid'?3e-4:0.01);ref.sr[l.id].classList.toggle('live',shoreOpen(l));
+    const m=st.mv[l.mv];ref.hose[l.mv].hl.style.display=m.hose?'':'none';ref.hose[l.mv].bf.style.display=m.hose?'none':'';});
+  ref.comp.classList.toggle('run',c.run);ref.comp.classList.toggle('trip',!c.run&&!!c.trip);
+  const sh=st.shore,sf=fill(sh);
+  ref.wf.textContent=nl(sf*100,0)+'%';ref.wp.textContent=barg(pres(sh))+' bar';ref.wt.textContent=nl(sh.T-273.15,0)+' °C';
+  ref.wpump.textContent='walpomp '+(st.shorePump?'aan':'uit');ref.wpump.classList.toggle('on',st.shorePump);
+  ref.wlink.textContent=st.link.ok?'signaal OK':'onderbroken';ref.wlink.classList.toggle('bad',!st.link.ok);
+  ref.wl.setAttribute('y',20+118*(1-sf));ref.wl.setAttribute('height',118*sf);
+  // balk
+  $('#simTime').textContent=fmtTime(st.t);$('#onboard').textContent=nl(onboard(),1);
+  const r=st.rate;$('#rate').textContent=Math.abs(r)<1?'stil':`${r>0?'laden':'lossen'} ${nl(Math.abs(r),0)}`;
+  $('#prodName').textContent=P.name;
+  // alarmbanner
+  const tu=topAlarm(true),ta=topAlarm(false),bn=$('#banner');
+  if(ta){bn.hidden=false;const a=tu||ta,n=[...st.alarms.values()].filter(x=>!x.ack).length;
+    bn.className='banner k-'+a.kind+(tu?'':' acked');
+    $('#bText').textContent=tu?`${a.text}${n>1?` (+${n-1})`:''}`:`${st.alarms.size} alarm${st.alarms.size>1?'en':''} actief, bevestigd`;
+    $('#bKind').textContent=KIND_TXT[a.kind];$('#ackBtn').hidden=!tu;}
+  else bn.hidden=true;
+  $('#muteBtn').textContent=muted?'Geluid uit':'Geluid aan';
+  // tank
+  const x=st.tanks[sel],pi=st.pinfo[sel],pg=(pres(x)-ATM)/1e5;
+  $('#selStats').innerHTML=`<div><b>${nl(fill(x)*100,1)}%</b><span>${nl(vol(x),0)} m³ · max ${nl(S.maxFill,0)}%</span></div><div><b class="${pg>=pAlarm()?'red':''}">${nl(pg,2)}</b><span>bar · max ${nl(S.relief,1)}</span></div><div><b>${nl(x.T-273.15,1)}</b><span>°C · alarm ${nl(S.tAlarm,0)}</span></div>`;
+  $('#pumpMano').textContent=st.pumps[sel]?`Manometer pomp: in ${barg(pi.pin)} bar, uit ${barg(pi.pout)} bar, ${nl(Math.abs(pi.q)*3600,0)} m³/u`:'Pomp staat stil';
+  $('#pumpBtn').classList.toggle('on',st.pumps[sel]);$('#pumpBtn').textContent='Lospomp '+(st.pumps[sel]?'aan':'uit');
+  // compressor
+  const cb=$('#compBtn');cb.textContent=c.run?'Compressor stoppen':'Compressor starten';cb.classList.toggle('on',c.run);
+  $('#compState').textContent=c.run?'In bedrijf':(c.trip||'Uit');$('#compState').className='state '+(c.run?'ok':c.trip?'bad':'');
+  $('#cPs').textContent=isFinite(c.ps)?barg(c.ps):'–';$('#cPd').textContent=isFinite(c.pd)?barg(c.pd):'–';$('#cM').textContent=nl(c.m*3.6,1);
+  $('#cPd').classList.toggle('red',isFinite(c.pd)&&(c.pd-ATM)/1e5>S.maxPd*0.95);
+  // schip-wal
+  $('#linkState').textContent=st.link.ok?'Signaal in orde':'Onderbroken: '+st.link.cause;$('#linkState').className='state '+(st.link.ok?'ok':'bad');
+  $('#linkReset').hidden=st.link.ok;$('#shoreStopBtn').textContent=st.shoreHold?'Wal geeft lossen vrij':'Wal stopt lossen';$('#shoreStopBtn').classList.toggle('on',st.shoreHold);
+  $('#shorePumpBtn').classList.toggle('on',st.shorePump);$('#shorePumpBtn').textContent='Walpomp '+(st.shorePump?'aan':'uit');
+  if(st.dirty){renderSel();st.dirty=false;}
+  $('#log').innerHTML=st.log.slice(0,40).map(e=>`<li class="${e.level}"><time>${fmtTime(e.t)}</time>${e.text}</li>`).join('')||'<li class="info">Nog geen meldingen.</li>';
+  if($('#expert').open){
+    const rows=[...st.tanks,sh].map(x=>`<tr><td>${x.name}</td><td>${nl(vol(x),0)}</td><td>${nl(x.mL/1000,1)}</td><td>${nl(x.T-273.15,1)}</td><td>${barg(pres(x))}</td><td>${barg(psat(x.T))}</td></tr>`).join('');
+    $('#tbl').innerHTML=`<tr><th>Tank</th><th>m³</th><th>t vl.</th><th>°C</th><th>bar</th><th>evenw.</th></tr>${rows}`;
+    $('#tech').innerHTML=`Drukalarm staat op ${nl(pAlarm(),2)} bar (${nl(S.pAlarmPct,0)}% van ${nl(S.relief,1)} bar). Compressor: drukverhouding ${nl(c.r,2)}, perstemperatuur ${nl(c.Td-273.15,0)} °C.<br>Leidingdruk: ${LINES.map(l=>`${l.name.toLowerCase()} ${isFinite(st.hp[l.id])?barg(st.hp[l.id]):'–'} bar`).join(', ')}.<br>Afgeblazen via veiligheidskleppen: ${nl(st.vented,0)} kg.`;
+  }
+}
+let last=performance.now(),lastR=0,lastA=0;
+function frame(now){
+  const rdt=Math.min(0.1,(now-last)/1000);last=now;
+  if(running){const sdt=rdt*speed,n=Math.max(1,Math.ceil(sdt/0.5)),h=sdt/n;for(let i=0;i<n;i++){step(h);if(i%5===4)evalAlarms();}}
+  if(now-lastA>100){evalAlarms();lastA=now;}
+  if(now-lastR>120||st.dirty){render();lastR=now;}
+  requestAnimationFrame(frame);
+}
+buildSVG();buildPanel();bindControls();reset('propaan','laden');placeMarks();render();requestAnimationFrame(frame);
+</script>
+</body>
+</html>

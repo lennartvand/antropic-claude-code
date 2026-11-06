@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ballastsysteem S-serie</title>
+<style>
+  :root { --blue:#2e3192; --grn:#39b54a; --red:#ed1c24; --ink:#231f20; --panel:#f4f5f7; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif; color:var(--ink); background:#e9ebee; }
+  #app { display:grid; grid-template-columns: 1fr 360px; height:100vh; }
+  #stage { position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#fff; }
+  #stage svg { width:100%; height:100%; display:block; }
+  aside { background:var(--panel); border-left:1px solid #cfd3d8; overflow-y:auto; padding:14px 14px 30px; }
+  aside h2 { font-size:15px; margin:18px 0 8px; text-transform:uppercase; letter-spacing:.04em; color:#555; }
+  aside h2:first-child { margin-top:0; }
+  .btns { display:flex; flex-wrap:wrap; gap:6px; }
+  button { font:inherit; font-size:14px; padding:8px 11px; border:1px solid #b9bec5; background:#fff; border-radius:6px; cursor:pointer; color:var(--ink); }
+  button:hover { background:#eef2ff; }
+  button.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+  button.big { font-size:15px; font-weight:600; flex:1; }
+  label.chk { display:flex; align-items:center; gap:8px; font-size:14px; margin:6px 0; cursor:pointer; }
+  select, input[type=number] { font:inherit; font-size:14px; padding:6px; border-radius:6px; border:1px solid #b9bec5; background:#fff; }
+  input[type=number] { width:80px; }
+  .box { background:#fff; border:1px solid #dde0e4; border-radius:6px; padding:8px 10px; margin-top:8px; }
+  .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:5px 0; font-size:14px; }
+  .row .lab { min-width:62px; color:#555; }
+  .seg { display:inline-flex; border:1px solid #b9bec5; border-radius:6px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; padding:6px 10px; border-right:1px solid #b9bec5; }
+  .seg button:last-child { border-right:0; }
+  .tankchk { display:inline-flex; align-items:center; gap:4px; font-size:14px; margin-right:8px; cursor:pointer; }
+  #routeNote { font-size:13px; color:#333; margin-top:6px; }
+  ol#steps { padding-left:0; list-style:none; margin:0; counter-reset: s; }
+  ol#steps li { counter-increment: s; position:relative; padding:7px 8px 7px 38px; margin:4px 0; border-radius:6px; background:#fff; border:1px solid #dde0e4; font-size:14px; line-height:1.3; }
+  ol#steps li::before { content: counter(s); position:absolute; left:8px; top:6px; width:22px; height:22px; border-radius:50%; background:#ccd; color:#fff; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  ol#steps li.ok { border-color:#9bd3a4; background:#effaf1; }
+  ol#steps li.ok::before { content:"✓"; background:var(--grn); }
+  ol#steps li.cur { border-color:var(--blue); box-shadow:0 0 0 2px #c9cbf0; }
+  ol#steps li.cur::before { background:var(--blue); }
+  .note { font-size:12px; color:#666; margin-top:6px; }
+  #msgs { list-style:none; padding:0; margin:0; }
+  #msgs li { font-size:14px; padding:7px 9px; margin:4px 0; border-radius:6px; border-left:5px solid; background:#fff; }
+  #msgs li.info { border-color:#7a8; }
+  #msgs li.warn { border-color:#f0a020; background:#fff8e8; }
+  #msgs li.alarm { border-color:var(--red); background:#fdecec; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { background:#fff; } }
+  table.data { border-collapse:collapse; width:100%; font-size:13px; }
+  table.data td, table.data th { padding:3px 4px; border-bottom:1px solid #e3e5e8; text-align:left; vertical-align:top; }
+  table.data th { color:#555; font-weight:600; }
+  .leeg { color:#b06000; }
+  #dlgGegevens { max-width:920px; width:calc(100% - 32px); }
+  #dlgGegevens h4 { margin:16px 0 6px; font-size:15px; }
+  #dlgGegevens input[type=text] { font:inherit; font-size:14px; padding:5px 6px; border-radius:5px; border:1px solid #b9bec5; width:100%; }
+  #dlgGegevens input.num { width:90px; }
+  #dlgGegevens input::placeholder { color:#aaa; font-style:italic; }
+  #dlgGegevens .fout { border-color:var(--red); background:#fdecec; }
+  #dlgGegevens select { padding:4px; font-size:13px; }
+  #dlgGegevens .knoppen { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; position:sticky; bottom:-20px; background:#fff; padding:10px 0; }
+  #dlgGegevens .melding { font-size:14px; margin-top:8px; }
+  dialog { max-width:720px; border:1px solid #b9bec5; border-radius:10px; padding:20px 24px; font-size:15px; line-height:1.45; }
+  dialog::backdrop { background:rgba(0,0,0,.35); }
+  dialog h3 { margin:16px 0 6px; font-size:16px; }
+  dialog h3:first-child { margin-top:0; }
+  #tip { position:absolute; pointer-events:none; background:#222; color:#fff; font-size:13px; padding:5px 8px; border-radius:5px; opacity:0; transition:opacity .15s; white-space:nowrap; }
+  @media (max-width: 1000px) { #app { grid-template-columns: 1fr; grid-template-rows: auto auto; height:auto; } #stage { height:72vw; } aside { border-left:0; } }
+
+  /* afdrukken: bladen A3 liggend */
+  #printdoc { display:none; }
+  @page { size: A3 landscape; margin: 8mm; }
+  @media print {
+    html, body { height:auto; background:#fff; }
+    aside, #tip, dialog { display:none !important; }
+    #app { display:block; height:auto; }
+    #stage { width:100%; height:279mm; }
+    body.printing #printdoc { display:block; break-before:page; font-size:10.5pt; }
+  }
+  #printdoc h1 { font-size:22pt; margin:0 0 4mm; }
+  #printdoc h2 { font-size:13pt; margin:4mm 0 1.5mm; }
+  #printdoc .cols { display:grid; grid-template-columns: 1fr 1fr; gap:10mm; }
+  #printdoc table { border-collapse:collapse; width:100%; font-size:10pt; }
+  #printdoc td, #printdoc th { border:1px solid #888; padding:0.9mm 2mm; text-align:left; vertical-align:top; }
+  #printdoc th { background:#eee; }
+  #printdoc .open { color:#1d7a2c; font-weight:bold; }
+  #printdoc .dicht { color:#c4161c; font-weight:bold; }
+  #printdoc .vak { display:inline-block; min-width:28mm; border-bottom:1px solid #000; }
+  #printdoc .klein { font-size:9.5pt; color:#444; }
+  #printdoc ol li { margin:0.6mm 0; }
+  #printdoc.compact td, #printdoc.compact th { padding:0.35mm 2mm; }
+  #printdoc.compact h2 { margin:2.5mm 0 1mm; }
+  #printdoc p { margin:1.5mm 0; }
+</style>
+</head>
+<body>
+
+<!--
+  ================================================================
+  SCHEEPSPROFIEL
+  ================================================================
+  Hier staat alles wat per schip kan verschillen. Open dit bestand in
+  Kladblok (of een andere teksteditor), pas de waarden aan en sla op.
+  - Een leeg veld (null) betekent: nog niet ingevuld. De simulator toont
+    dan "–" of werkt in procenten, op de bladen komt een leeg invulvak.
+  - Getallen met een punt schrijven: 13.5 (niet 13,5). Peilen in cm.
+  - Makkelijker: in de simulator op "Gegevens invullen…" klikken.
+  - Afsluiternamen: alleen invullen als ze aan boord anders heten dan de
+    standaardnaam van de S-serie. Voorbeeld:  ze1: "Zuig ejector voor",
+  ================================================================
+-->
+<script id="profiel">
+const PROFIEL = {
+  schip: "",                       // naam van het schip, bv. "MTS Voorbeeld"
+  versie: "2.2 (concept)",
+
+  // Peilen in het ruim in centimeter. alarm = hoogwateralarm, max = maximaal niveau, doel = standaard doelpeil bij ballast in.
+  peil: {
+    T3: { alarm: null, max: null, doel: null },   // Ruim 3
+    T2: { alarm: null, max: null, doel: null },   // Ruim 2
+    T1: { alarm: null, max: null, doel: null },   // Ruim 1
+    UT: { alarm: null, max: null, doel: null },   // U-tank (ballastruimte rond de methanoltank)
+  },
+  zaadhout_cm: 140,                // zaadhout: dicht schot tussen BB en SB, tot deze hoogte (uit het hoofd, nog controleren)
+  meting_lading_ton: 13.5,         // lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")
+  utank_ton: null,                 // inhoud U-tank in ton bij max. niveau
+  helling_graden_per_100t: null,   // slagzij: gemeten helling (graden) bij 100 t meer aan één kant (uit een proef)
+
+  // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.
+  tanktabel: {
+    T1: [[70, 202.745], [75, 217.243], [80, 230.010], [85, 241.736], [125, 315.674], [130, 323.192], [145, 344.052], [225, 424.698]],
+    T2: [[45, 130.446], [75, 219.021], [80, 231.847], [95, 265.059], [100, 274.924], [110, 293.277], [115, 301.838], [155, 359.074], [160, 365.075], [235, 434.863], [240, 438.536], [245, 442.132], [250, 445.653]],
+    T3: [[10, 28.106], [15, 42.501], [20, 57.036], [25, 71.677], [60, 175.642], [65, 190.566], [70, 205.493], [115, 304.096], [120, 312.434]],
+  },
+
+  // Ballastplan per diepgang (metingen uit ballast.xlsx). Peilen in cm als [BB, SB]; ton = ballast + lading aan boord tijdens de meting;
+  // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].
+  ballastplan: [
+    { diepgang: 1.4, T1: [73, 72], T2: null, T3: null, ton: 223.494, buiten: [141.17, 2.5], binnen: [140.25, 2] },
+    { diepgang: 1.5, T1: [73, 72], T2: [45, 45], T3: null, ton: 353.94, buiten: [150.75, 1], binnen: null },
+    { diepgang: 1.6, T1: [73, 72], T2: [77, 76], T3: [14, 15], ton: 487.424, buiten: [161.42, 1.5], binnen: [162.33, 1] },
+    { diepgang: 1.7, T1: [82, 83], T2: [100, 99.5], T3: [25, 23], ton: 592.059, buiten: [170.25, 2.25], binnen: [172, 1.5] },
+    { diepgang: 1.8, T1: [72.5, 72.5], T2: [247, 247], T3: [15, 15], ton: 709.535, buiten: [180.42, 0], binnen: null },
+    { diepgang: 1.9, T1: [128, 128], T2: [114, 114], T3: [60, 60], ton: 809.453, buiten: [188.5, 1.5], binnen: [189.67, 1] },
+    { diepgang: 2, T1: [145, 145], T2: [157, 157], T3: [66, 66], ton: 912.578, buiten: [199.83, -0.5], binnen: [199.33, -2] },
+    { diepgang: 2.2, T1: [225, 225], T2: [239, 239], T3: [118, 118], ton: 1185.098, buiten: [220.92, 0.25], binnen: [221.83, -1] },
+  ],
+
+  // Diepgang en Sygo-stand (uit het tabellenboek). Voeg zo veel regels toe als nodig.
+  diepgang: [
+    { omschrijving: "", diepgang: null, sygo: null },
+  ],
+
+  // Optioneel: met de capaciteit rekent de simulator met echte tijden (1 m³ water ≈ 1 ton).
+  capaciteit: { pomp_m3h: null, ejector_m3h: null },
+
+  // Afwijkende afsluiternamen (sleutel = code uit de lijst STANDAARDNAMEN hieronder).
+  namen: {
+  },
+
+  // Controlestatus per onderdeel (eigen administratie).
+  // status: "gecontroleerd", "besproken", "nog controleren" of "nog invullen".
+  controle: [
+    { onderdeel: "Opbouw leidingschema S-serie", status: "besproken", wanneer: "30-10-2026", opm: "3 ruimen + U-tank, 2 pompen, 2 ejectors, DN50-strips in elk ruim." },
+    { onderdeel: "Volgorde bedienen en ruststand", status: "besproken", wanneer: "30-10-2026", opm: "Alles klaarzetten, dan pomp starten. Klaar: pomp stop, alles dicht. Buitenboord altijd open." },
+    { onderdeel: "Deelafsluiters als routekeuze", status: "besproken", wanneer: "30-10-2026", opm: "Meestal één pomp; deelafsluiters alleen open als het water verder moet." },
+    { onderdeel: "Afsluiternamen", status: "nog controleren", wanneer: "", opm: "Standaardnamen; controleren met het controleblad." },
+    { onderdeel: "U-tank: één vul/zuigleiding", status: "nog controleren", wanneer: "", opm: "Drainleiding: aanwezig? waar? afsluiter?" },
+    { onderdeel: "DN-maten", status: "nog controleren", wanneer: "", opm: "" },
+    { onderdeel: "Tanktabellen en ballastplan", status: "besproken", wanneer: "01-11-2026", opm: "Uit ballast.xlsx. Binnen-meting bij 1,50 m onvolledig en bij 1,80 m leeg." },
+    { onderdeel: "Zaadhout 140 cm", status: "nog controleren", wanneer: "", opm: "Uit het hoofd." },
+    { onderdeel: "Alarm, max. niveau en Sygo-stand", status: "nog invullen", wanneer: "", opm: "Uit het tabellenboek." },
+    { onderdeel: "Capaciteiten", status: "nog invullen", wanneer: "", opm: "Optioneel, voor echte tijden." },
+  ],
+};
+</script>
+
+<div id="app">
+  <div id="stage"><svg id="svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1414" preserveAspectRatio="xMidYMid meet"><style>
+    .pipe { fill:none; stroke:#231f20; stroke-linejoin:miter; }
+    .flow { fill:none; stroke:#2e3192; stroke-width:9; stroke-linecap:butt; stroke-dasharray:22 12; animation: dash .6s linear infinite; }
+    .flow.rev { animation-direction: reverse; }
+    .flow.paused { animation-play-state: paused; }
+    @keyframes dash { to { stroke-dashoffset:-34; } }
+    .valve { cursor:pointer; }
+    .valve .hit { fill:transparent; }
+    .valve:hover .hit { fill:rgba(46,49,146,.12); }
+    .vlabel { cursor:pointer; font-weight:bold; }
+    .vlabel:hover { fill:#2e3192; }
+    .hint { fill:none; stroke:#ff8c00; stroke-width:4; opacity:0; pointer-events:none; }
+    .hint.show { opacity:1; animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { stroke-width:8; opacity:.35; } }
+    .pump { cursor:pointer; }
+    .pump .ring { fill:none; stroke:#fff; stroke-width:5; stroke-dasharray:10 9; opacity:0; transform-box: fill-box; transform-origin: center; }
+    .pump.run .ring { opacity:.9; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pump:hover .phit { fill:rgba(46,49,146,.08); }
+    .ejbody.active { fill:#cfe6fb; }
+    .od { display:none; font-weight:bold; pointer-events:none; }
+    .print-only { display:none; }
+    svg.printing .od { display:inline; }
+    svg.printing .print-only { display:inline; }
+    svg.printing .screen-only, svg.printing .flow, svg.printing .hint, svg.printing .ring { display:none; }
+  </style></svg><div id="tip"></div></div>
+  <aside>
+    <h2>Situatie</h2>
+    <div class="btns">
+      <button class="big" data-scn="in">Ballast in</button>
+      <button class="big" data-scn="uit">Ontballasten</button>
+      <button class="big" data-scn="vrij">Vrij oefenen</button>
+    </div>
+
+    <div class="box" id="taskBox">
+      <div class="row"><span class="lab">Ruimen</span><span id="tankChoice"></span></div>
+      <div class="row"><span class="lab">Pomp</span>
+        <span class="seg" id="pumpChoice">
+          <button data-p="achter">Achter</button><button data-p="voor">Voor</button><button data-p="beide">Beide</button>
+        </span>
+      </div>
+      <div id="doelBox"></div>
+      <div id="routeNote"></div>
+    </div>
+
+    <label class="chk"><input type="checkbox" id="showTarget" checked> Toon wat er nog moet veranderen (oranje)</label>
+    <div class="btns">
+      <button id="btnTarget">Zet alles in doelstand</button>
+      <button id="btnRust">Ruststand</button>
+    </div>
+
+    <h2>Stappenplan</h2>
+    <ol id="steps"></ol>
+    <div class="note" id="stepNote"></div>
+
+    <h2>Meldingen</h2>
+    <ul id="msgs"></ul>
+
+    <h2>Peilen &amp; simulatie</h2>
+    <div class="btns">
+      <button id="lvEmpty">Ruimen leeg</button>
+      <button id="lvFull">Ruimen geballast</button>
+    </div>
+    <div class="btns" style="margin-top:8px;align-items:center">
+      <button id="btnPause">⏸ Pauze</button>
+      <span style="font-size:14px">Snelheid</span>
+      <select id="speed"><option value="1">1×</option><option value="3">3×</option><option value="10">10×</option><option value="30">30×</option><option value="100">100×</option><option value="300">300×</option></select>
+    </div>
+    <div class="box" id="totNote"><div id="totText" style="font-weight:600;color:var(--blue)"></div>
+      <div class="row" style="margin-bottom:0"><span>Lading aan boord</span><input type="number" id="ladingNu" min="0" step="10" value="0"> t</div>
+      <div class="note" style="margin-top:2px">Telt mee voor de geschatte diepgang.</div></div>
+    <div class="note" id="meterNote"></div>
+    <div class="note" id="capNote"></div>
+
+    <h2>Scheepsgegevens</h2>
+    <div id="shipData"></div>
+    <div class="btns" style="margin-top:8px"><button id="btnGegevens">Gegevens invullen…</button></div>
+
+    <h2>Afdrukken (A3)</h2>
+    <div class="btns" style="align-items:center">
+      <select id="printKind">
+        <option value="in">Blad Ballast in</option>
+        <option value="uit">Blad Ontballasten</option>
+        <option value="rust">Blad Ruststand</option>
+        <option value="controle">Controleblad</option>
+      </select>
+      <button id="btnPrint">Afdrukken</button>
+    </div>
+    <div class="note">De bladen gebruiken de keuze voor ruimen en pomp hierboven. Blad 2 bevat de standentabel en de invulvakken.</div>
+
+  </aside>
+</div>
+
+<div id="printdoc"></div>
+
+<dialog id="dlgGegevens"><div id="gegBody"></div></dialog>
+
+<script>
+const PUMP_L = "__PUMPL__";
+const PUMP_R = "__PUMPR__";
+</script>
+
+<script>
+"use strict";
+// Kopie van dit bestand zoals het geladen is (vóór de tekening wordt opgebouwd), om bij "Gegevens invullen" een nieuw bestand te maken.
+const BRON_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+const STANDAARDNAMEN = {
+  bu_a:"Buitenboord achter", bu_v:"Buitenboord voor",
+  pe_a:"Pers ejector achter", pb_a:"Pers ballast achter", pb_v:"Pers ballast voor", pe_v:"Pers ejector voor",
+  po3:"Pers overboord 3", ze3:"Zuig ejector 3", ze1:"Zuig ejector 1", po1:"Pers overboord 1",
+  d23:"Deelafsluiter 2-3", d12:"Deelafsluiter 1-2", ut:"U-tank",
+  bal3bb:"Ballast 3 BB", bal3sb:"Ballast 3 SB", str3bb:"Strip 3 BB", str3sb:"Strip 3 SB",
+  bal2bb:"Ballast 2 BB", bal2sb:"Ballast 2 SB", str2bb:"Strip 2 BB", str2sb:"Strip 2 SB",
+  bal1bb:"Ballast 1 BB", bal1sb:"Ballast 1 SB", str1bb:"Strip 1 BB", str1sb:"Strip 1 SB",
+};
+const naam = id => (PROFIEL.namen && PROFIEL.namen[id]) || STANDAARDNAMEN[id] || id;
+const num = v => (typeof v === "number" && isFinite(v)) ? v : null;
+const TK = ["T3","UT","T2","T1"];                       // van achter naar voor
+const TKNAAM = {T3:"Ruim 3", UT:"U-tank", T2:"Ruim 2", T1:"Ruim 1"};
+
+const BLK="#231f20", BLUE="#2e3192", GRN="#39b54a", RED="#ed1c24", GREY="#c8c8c8";
+const FONT='"Myriad Pro", "Segoe UI", Arial, sans-serif', NARROW='"Arial Narrow", Arial, sans-serif';
+const HDR=675, RISER={3:400, 2:975, 1:1428};
+
+/* ---------------- peilen uit het profiel ---------------- */
+// Intern rekent de simulator per tank met een fractie 0..1 van de inhoud bij max. niveau (capTon).
+// Met een tanktabel wordt die fractie omgerekend naar cm en ton.
+const P = t => PROFIEL.peil[t] || {};
+const fmt = (v, d=2) => v.toFixed(d).replace(".", ",");
+const BALK_CM = 300;                                     // balkhoogte als het max. niveau nog niet is ingevuld
+function tabel(t) {
+  const a = ((PROFIEL.tanktabel || {})[t] || []).filter(r => num(r[0]) !== null && num(r[1]) !== null).sort((x,y) => x[0]-y[0]);
+  if (!a.length) return null;
+  return a[0][0] > 0 ? [[0,0], ...a] : a;
+}
+function interp(a, x, i, o) {                            // lineair door de punten van a; buiten het bereik met de laatste helling
+  if (a.length < 2) return a[0][o] * (x / a[0][i] || 0);
+  let k = 1; while (k < a.length - 1 && x > a[k][i]) k++;
+  const [p, q] = [a[k-1], a[k]];
+  return p[o] + (q[o] - p[o]) * (x - p[i]) / (q[i] - p[i]);
+}
+const tonAt = (t, cm) => { const a = tabel(t); return a ? Math.max(0, interp(a, cm, 0, 1)) : null; };
+const cmAt = (t, ton) => { const a = tabel(t); return a ? Math.max(0, interp(a, ton, 1, 0)) : null; };
+const maxCm = t => num(P(t).max) ?? (tabel(t) ? BALK_CM : null);
+function capTon(t) {
+  if (tabel(t)) return tonAt(t, maxCm(t));
+  if (t === "UT") return num(PROFIEL.utank_ton) ?? 50;  // 50 t = indicatief
+  return 300;
+}
+const fracCm = (t, cm) => { if (num(cm) === null) return null; if (tabel(t)) return Math.min(1, tonAt(t, cm) / capTon(t)); const m = num(P(t).max); return m ? Math.min(1, cm / m) : null; };
+const tonOf = (t, f) => f * capTon(t);
+const cmOf = (t, f) => tabel(t) ? cmAt(t, tonOf(t, f)) : (num(P(t).max) ? f * P(t).max : null);
+const alarmFrac = t => fracCm(t, num(P(t).alarm));
+const zaadFrac = t => t !== "UT" ? fracCm(t, num(PROFIEL.zaadhout_cm)) : null;
+const tonKnown = t => !!tabel(t) || (t === "UT" && num(PROFIEL.utank_ton) !== null);
+function lvlTxt(t, f) {
+  const cm = cmOf(t, f), ton = tonKnown(t) ? Math.round(tonOf(t, f)) + " t" : null;
+  if (cm !== null) return Math.round(cm) + " cm" + (ton ? " · " + ton : "");
+  return Math.round(f * 100) + " %" + (ton ? " · " + ton : "");
+}
+const STRIP_FRAC = 0.04;                                 // onder dit peil helpt een open strip iets mee
+function cap() {                                         // ton per seconde bij 1×
+  const c = PROFIEL.capaciteit || {};
+  const real = num(c.pomp_m3h) && num(c.ejector_m3h);
+  return real ? { real:true, qp:c.pomp_m3h/3600, qe:c.ejector_m3h/3600 } : { real:false, qp:2.0, qe:1.7 };
+}
+// Totaal en geschatte diepgang uit het ballastplan (ton -> gemeten inzinking buiten, anders de doeldiepgang).
+const plan = () => (PROFIEL.ballastplan || []).filter(r => num(r.ton) !== null).sort((a,b) => a.ton - b.ton);
+// Het ballastplan is gemeten met nog wat lading aan boord (meting_lading_ton). Voor de diepgang telt de lading die nu aan boord is mee.
+const metingLading = () => num(PROFIEL.meting_lading_ton) || 0;
+const planBallast = r => num(r.ton) !== null ? r.ton - metingLading() : null;
+let ladingNu = 0;
+// Per ruim de tonnen aan BB en SB. Onder het zaadhout zijn de kanten gescheiden; erboven lopen ze in elkaar over.
+const HOLDS = ["T3","T2","T1"];
+const kant = {T3:{B:0,S:0}, T2:{B:0,S:0}, T1:{B:0,S:0}};
+const zaadTon = t => { const z = num(PROFIEL.zaadhout_cm); return z && tabel(t) ? tonAt(t, z) / 2 : 0; };   // per kant
+function verdeel(t) {
+  const k = kant[t], H = zaadTon(t), cap = capTon(t);
+  let tot = Math.min(cap, k.B + k.S);
+  if (!H || tot >= 2*H) k.B = k.S = tot / 2;
+  else if (k.B > H) { k.B = H; k.S = tot - H; }
+  else if (k.S > H) { k.S = H; k.B = tot - H; }
+  else if (k.B + k.S > tot) { k.B = k.S = tot / 2; }
+  level[t] = (k.B + k.S) / cap;
+}
+function setLevel(t, f) { if (kant[t]) { kant[t].B = kant[t].S = f * capTon(t) / 2; verdeel(t); } else level[t] = f; }
+const kantFrac = (t, z) => kant[t] ? 2 * kant[t][z] / capTon(t) : level[t];       // als fractie van het hele ruim
+const minFrac = t => kant[t] ? Math.min(kantFrac(t,"B"), kantFrac(t,"S")) : level[t];
+const maxFrac = t => kant[t] ? Math.max(kantFrac(t,"B"), kantFrac(t,"S")) : level[t];
+function meterTxt(t) {
+  if (!kant[t]) return lvlTxt(t, level[t]);
+  const cb = cmOf(t, kantFrac(t,"B")), cs = cmOf(t, kantFrac(t,"S")), ton = tonKnown(t) ? " · " + Math.round(tonOf(t, level[t])) + " t" : "";
+  if (cb === null) return lvlTxt(t, level[t]);
+  return (Math.round(cb) === Math.round(cs) ? Math.round(cb) + " cm" : `BB ${Math.round(cb)} / SB ${Math.round(cs)} cm`) + ton;
+}
+const slagzijTon = () => HOLDS.reduce((s,t) => s + kant[t].B - kant[t].S, 0);       // + = BB zwaarder
+const ballastTon = () => TK.reduce((s,t) => s + (tonKnown(t) ? tonOf(t, level[t]) : 0), 0);
+// Ligging van het schip, geschat uit de metingen in het ballastplan:
+// - diepgang: tussen twee metingen lineair; daarbuiten doorgetrokken met de gemiddelde tonnen per cm inzinking;
+// - trim (achter min voor): een lineair verband trim = a + b1·W1 + b2·W2 + b3·W3 (W = ton in ruim n), passend gemaakt op de metingen;
+// - slagzij in graden alleen als helling_graden_per_100t is ingevuld.
+const gem = v => Array.isArray(v) ? (num(v[0]) !== null && num(v[1]) !== null ? (v[0]+v[1])/2 : num(v[0]) ?? num(v[1])) : null;
+const planTon = (r, t) => gem(r[t]) ? tonAt(t, gem(r[t])) : 0;
+function kleinsteKwadraten(X, y) {                       // normaalvergelijkingen, opgelost met Gauss-eliminatie
+  const n = X[0].length, A = Array.from({length:n}, (_, i) => [...Array(n).fill(0), 0]);
+  X.forEach((x, k) => { for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += x[i]*x[j]; A[i][n] += x[i]*y[k]; } });
+  for (let i = 0; i < n; i++) {
+    let m = i; for (let r = i+1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[m][i])) m = r;
+    [A[i], A[m]] = [A[m], A[i]];
+    if (Math.abs(A[i][i]) < 1e-9) return null;
+    for (let r = 0; r < n; r++) if (r !== i) { const f = A[r][i] / A[i][i]; for (let c = i; c <= n; c++) A[r][c] -= f * A[i][c]; }
+  }
+  return A.map((r, i) => r[n] / r[i]);
+}
+const LIGGING = (() => {
+  const rows = plan().filter(r => r.buiten && num(r.buiten[0]) !== null);
+  const pts = rows.map(r => [r.ton, r.buiten[0]]);
+  let tpc = null;                                        // ton per cm inzinking (gemiddeld over alle metingen)
+  if (pts.length >= 2) { const f = kleinsteKwadraten(pts.map(p => [1, p[0]]), pts.map(p => p[1])); if (f && f[1] > 0) tpc = 1 / f[1]; }
+  const tr = rows.filter(r => num(r.buiten[1]) !== null);
+  const trim = tr.length >= 5 ? kleinsteKwadraten(tr.map(r => [1, ...HOLDS.map(t => planTon(r, t))]), tr.map(r => r.buiten[1])) : null;
+  return { pts, tpc, trim };
+})();
+function ligging(ton) {
+  const { pts, tpc, trim } = LIGGING, L = {};
+  if (pts.length >= 2) {
+    const a = pts[0], b = pts[pts.length-1];
+    if (ton < a[0] && tpc) { L.inz = a[1] - (a[0] - ton) / tpc; L.door = true; }
+    else if (ton > b[0] && tpc) { L.inz = b[1] + (ton - b[0]) / tpc; L.door = true; }
+    else L.inz = interp(pts, ton, 0, 1);
+  }
+  if (trim) {
+    L.trim = trim[0] + HOLDS.reduce((s, t, i) => s + trim[i+1] * (kant[t].B + kant[t].S), 0);
+    if (L.inz !== undefined) { L.voor = L.inz - L.trim / 2; L.achter = L.inz + L.trim / 2; }
+  }
+  const g = num(PROFIEL.helling_graden_per_100t), sz = slagzijTon();
+  if (g !== null) L.helling = sz / 100 * g;
+  return L;
+}
+const cmTxt = v => fmt(v / 100) + " m";
+function liggingTxt(L, kort) {
+  const d = [];
+  if (L.inz !== undefined) d.push(`diepgang ${L.door ? "≈ " : ""}${cmTxt(L.inz)}${L.door ? " (doorgetrokken)" : ""}`);
+  if (L.trim !== undefined) {
+    const t = Math.round(L.trim);
+    d.push(t === 0 ? "≈ gelijklastig" : `≈ ${Math.abs(t)} cm ${t > 0 ? "achterover" : "voorover"}`);
+    if (!kort && L.voor !== undefined) d.push(`voor ${cmTxt(L.voor)} / achter ${cmTxt(L.achter)}`);
+  }
+  const sz = slagzijTon();
+  if (L.helling !== undefined && Math.abs(L.helling) >= 0.1) d.push(`helling ≈ ${fmt(Math.abs(L.helling),1)}° naar ${L.helling > 0 ? "BB" : "SB"}`);
+  else if (Math.abs(sz) >= 1) d.push(`${sz > 0 ? "BB" : "SB"} ${Math.round(Math.abs(sz))} t zwaarder`);
+  return d.join(" · ");
+}
+
+/* ---------------- svg helpers ---------------- */
+const svg = document.getElementById("svg");
+const NS = "http://www.w3.org/2000/svg";
+const layers = {};
+for (const n of ["tanks","base","flow","sym","valves","ui"]) { const g=document.createElementNS(NS,"g"); g.id="L_"+n; svg.appendChild(g); layers[n]=g; }
+function el(layer, tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  (typeof layer === "string" ? layers[layer] : layer).appendChild(e);
+  return e;
+}
+const group = (layer, cls) => el(layer, "g", cls ? {class:cls} : {});
+const PT = pts => pts.map(p=>p.join(",")).join(" ");
+const dOf = pts => "M" + pts.map(p=>p.join(" ")).join(" L");
+function line(layer, pts, w=4, c=BLK, extra={}) { return el(layer,"polyline",{points:PT(pts),fill:"none",stroke:c,"stroke-width":w,...extra}); }
+function poly(layer, pts, fill="#fff", stroke=BLK, w=3, extra={}) { return el(layer,"polygon",{points:PT(pts),fill,stroke,"stroke-width":w,"stroke-linejoin":"miter",...extra}); }
+function text(layer, x, y, s, size=14, anchor="start", opt={}) {
+  const a = {x,y,"font-family":opt.font||FONT,"font-size":size,"text-anchor":anchor,fill:opt.fill||BLK,"font-weight":opt.weight||"normal"};
+  if (opt.rot) a.transform=`rotate(${opt.rot} ${x} ${y})`;
+  if (opt.cls) a.class=opt.cls;
+  return el(layer,"text",a,s);
+}
+function tri(cx, cy, ang, L=22, W=18) {
+  const a=ang*Math.PI/180, ux=Math.cos(a), uy=Math.sin(a), px=-uy, py=ux;
+  return [[cx+ux*L/2, cy+uy*L/2],[cx-ux*L/2+px*W/2, cy-uy*L/2+py*W/2],[cx-ux*L/2-px*W/2, cy-uy*L/2-py*W/2]];
+}
+const dirArrow = (x,y,ang) => poly("sym", tri(x,y,ang,24,20), BLK, BLK, 1);
+function bell(x, y, ang, s=1) {
+  const a=ang*Math.PI/180, ux=Math.cos(a), uy=Math.sin(a), px=-uy, py=ux, L=36*s, W=36*s;
+  poly("sym", [[x,y],[x-ux*L+px*W/2, y-uy*L+py*W/2],[x-ux*L-px*W/2, y-uy*L-py*W/2]], "#fff", BLK, 4);
+}
+function checkValve(x, y, up) {
+  const L=17, W=12;
+  poly("sym", [[x-W,y-2*L],[x+W,y-2*L],[x,y]], up?BLK:"#fff", BLK, 2);
+  poly("sym", [[x-W,y+2*L],[x+W,y+2*L],[x,y]], up?"#fff":BLK, BLK, 2);
+}
+function sea(x, y, anchor, tx) {
+  const d = `M${x-20} ${y} q5 -7 10 0 t10 0 t10 0 t10 0 M${x-20} ${y+10} q5 -7 10 0 t10 0 t10 0 t10 0`;
+  el("sym","path",{d,fill:"none",stroke:BLUE,"stroke-width":2.5});
+  text("sym",tx,y+34,"buitenboord",16,anchor);
+  text("sym",tx,y+52,"(altijd open)",12,anchor,{fill:"#555"});
+}
+
+/* ---------------- statisch tekenwerk ---------------- */
+el("base","rect",{x:18,y:18,width:1962,height:1377,fill:"none",stroke:BLK,"stroke-width":2.5});
+const TANKS = {
+  T3:{rect:[260,208,417,937]}, T2:{rect:[829,208,451,937]}, T1:{rect:[1280,208,410,937]}, UT:{rect:null},
+};
+// ruimen in twee helften: boven = bakboord, onder = stuurboord (het zaadhout ligt op het midden)
+for (const k of ["T3","T2","T1"]) { const r=TANKS[k].rect, h=HDR-r[1]; TANKS[k].el = [el("tanks","rect",{x:r[0],y:r[1],width:r[2],height:h,fill:"#4aa3df","fill-opacity":0}), el("tanks","rect",{x:r[0],y:HDR,width:r[2],height:r[1]+r[3]-HDR,fill:"#4aa3df","fill-opacity":0})]; }
+TANKS.UT.el = [el("tanks","rect",{x:677,y:208,width:152,height:72,fill:"#4aa3df","fill-opacity":0}),
+               el("tanks","rect",{x:677,y:1072,width:152,height:73,fill:"#4aa3df","fill-opacity":0})];
+el("base","rect",{x:260,y:208,width:1430,height:937,fill:"none",stroke:BLK,"stroke-width":2});
+for (const x of [677,829,1280]) line("base",[[x,208],[x,1145]],2);
+line("base",[[677,280],[829,280]],2); line("base",[[677,1072],[829,1072]],2);
+text("base",753,257,"Ballast",42,"middle",{fill:GREY}); text("base",778,1120,"Ballast",32,"middle",{fill:GREY});
+"METHANOL".split("").forEach((c,i)=>text("base",753,445+i*85,c,92,"middle",{fill:GREY}));
+for (const [n,cx] of [[3,350],[2,1054],[1,1380]]) {
+  text("base",cx,198,`Ruim ${n} – bakboord`,17,"middle");
+  text("base",cx,1167,`Ruim ${n} – stuurboord`,17,"middle");
+}
+text("base",753,1167,"U-tank",17,"middle");
+if (num(PROFIEL.zaadhout_cm)) text("base",990,704,`zaadhout: schot BB | SB tot ${PROFIEL.zaadhout_cm} cm`,11,"start",{fill:"#777"});
+
+// doorsnede U-tank (linkerkolom)
+{
+  const g = group("base");
+  text(g,40,585,"Doorsnede U-tank",17,"start",{weight:"bold"});
+  const x0=58, x1=232, y0=610, y1=790, w=20;
+  el(g,"path",{d:`M${x0} ${y0} L${x0} ${y1} L${x1} ${y1} L${x1} ${y0} L${x1-w} ${y0} L${x1-w} ${y1-w} L${x0+w} ${y1-w} L${x0+w} ${y0} Z`,fill:"#4aa3df","fill-opacity":.55,stroke:BLK,"stroke-width":2});
+  el(g,"rect",{x:x0+w,y:y0,width:x1-x0-2*w,height:y1-y0-w,fill:"#e4e4e4",stroke:BLK,"stroke-width":2});
+  text(g,(x0+x1)/2,705,"methanol",17,"middle",{fill:"#777"});
+  text(g,40,822,"Ballast alleen in de U-tank",14);
+  text(g,40,840,"(zijkanten + bodem),",14);
+  text(g,40,858,"nooit in de methanoltank.",14,"start",{weight:"bold"});
+  text(g,40,880,"Bovenaanzicht: de U-tank is",12,"start",{fill:"#555"});
+  text(g,40,895,"de strook aan BB en SB.",12,"start",{fill:"#555"});
+}
+
+/* ---------------- leidingnet: knopen + leidingen ---------------- */
+// eindpunten: zee, pompen, tanks, ejector-aansluitingen, overboord
+const TERMINAL = new Set(["SEAA","SEAV","PA","PV","T1","T2","T3","UT","EJ3d","EJ3s","EJ1d","EJ1s","SEA3","SEA1"]);
+const EDGES = [];
+function edge(id, a, b, pts, valve=null, w=4, d=null) { EDGES.push({id,a,b,pts,valve,w,d: d || dOf(pts)}); }
+edge("zA","SEAA","PA",[[44,420],[44,162]],"bu_a");
+edge("zV","SEAV","PV",[[1956,420],[1956,130],[1901,130]],"bu_v");
+edge("pA1","PA","JAE",[[172,68],[570,68]]);
+edge("pA2","JAE","JAB",[[570,68],[650,68]]);
+edge("drA","JAE","EJ3d",[[570,68],[570,540],[520,540]],"pe_a");
+edge("pbA","JAB","H650",[[650,68],[650,HDR]],"pb_a");
+edge("pV1","PV","JVE",[[1772,68],[1570,68]]);
+edge("pV2","JVE","JVB",[[1570,68],[1530,68]]);
+edge("drV","JVE","EJ1d",null,"pe_v",4,`M1570 68 L1570 ${HDR-14} A14 14 0 0 0 1570 ${HDR+14} L1570 814 L1612 814`);
+edge("pbV","JVB","H1530",[[1530,68],[1530,HDR]],"pb_v");
+edge("h1","H400","H485",[[400,HDR],[485,HDR]]);
+edge("h2","H485","H597",[[485,HDR],[597,HDR]]);
+edge("h3","H597","H650",[[597,HDR],[650,HDR]]);
+edge("h4","H650","H975",[[650,HDR],[975,HDR]],"d23");
+edge("h5","H975","H1428",[[975,HDR],[1428,HDR]],"d12");
+edge("h6","H1428","H1530",[[1428,HDR],[1530,HDR]]);
+edge("h7","H1530","H1650",[[1530,HDR],[1650,HDR]]);
+edge("zs3","H485","EJ3s",[[485,HDR],[485,578]],"ze3");
+edge("dis3","EJ3o","SEA3",[[485,428],[485,172]],"po3");
+edge("zs1","H1650","EJ1s",[[1650,HDR],[1650,776]],"ze1");
+edge("dis1","EJ1o","SEA1",[[1650,926],[1650,1185]],"po1");
+edge("ut1","H597","UT",[[597,HDR],[597,1105],[722,1105]],"ut",2.5);
+const HR = {3:"H400",2:"H975",1:"H1428"};
+for (const n of [3,2,1]) {
+  const rx=RISER[n], T="T"+n;
+  edge(`bb${n}`,HR[n],T,[[rx,HDR],[rx,627],[rx-95,627]],`bal${n}bb`,2.5);
+  edge(`sb${n}`,HR[n],T,[[rx,HDR],[rx,733],[rx-95,733]],`bal${n}sb`,2.5);
+  edge(`st${n}b`,HR[n],T,[[rx,HDR],[rx,507],[rx-100,507],[rx-100,282]],`str${n}bb`,4);
+  edge(`st${n}s`,HR[n],T,[[rx,HDR],[rx,852],[rx-100,852],[rx-100,1078]],`str${n}sb`,4);
+}
+const ADJ = {};
+for (const e of EDGES) { (ADJ[e.a] ||= []).push(e); (ADJ[e.b] ||= []).push(e); }
+
+for (const e of EDGES) el("base","path",{d:e.d,class:"pipe","stroke-width":e.w});
+line("base",[[1650,HDR],[1690,HDR]],4);
+for (const e of EDGES) e.fl = el("flow","path",{d:e.d,class:"flow",style:"display:none"});
+
+/* ---------------- symbolen ---------------- */
+for (const n of [3,2,1]) {
+  const rx=RISER[n];
+  bell(rx-100,282,90); bell(rx-100,1078,-90);
+  dirArrow(rx-100,335,90); dirArrow(rx-100,1022,-90);
+  bell(rx-95,627,0); bell(rx-95,733,0);
+  text("sym",rx-84,300,"DN50",12,"middle",{rot:-90,font:NARROW});
+  text("sym",rx-84,1065,"DN50",12,"middle",{rot:-90,font:NARROW});
+  text("sym",rx-62,644,"DN100",12,"middle",{font:NARROW});
+  text("sym",rx-62,727,"DN100",12,"middle",{font:NARROW});
+}
+const EJ = {};
+function ejector(k, x, yt, up) {
+  const s = up ? -1 : 1, ys = yt - s*38, yd = yt + s*112;
+  const g = group("sym");
+  poly(g,[[x,yt],[x-19,ys],[x+19,ys]],"#fff",BLK,4,{class:"ejbody"});
+  poly(g,[[x-7,yt+s*10],[x+7,yt+s*10],[x+19,yd],[x-19,yd]],"#fff",BLK,4,{class:"ejbody"});
+  el(g,"circle",{cx:x,cy:yt,r:8,fill:"#fff",stroke:BLK,"stroke-width":3});
+  EJ[k] = g;
+}
+ejector(3,485,540,true); poly("sym",[[494,540],[520,522],[520,558]],"#fff",BLK,4);
+ejector(1,1650,814,false); poly("sym",[[1641,814],[1612,796],[1612,832]],"#fff",BLK,4);
+text("sym",430,560,"Ejector 3",13,"end",{weight:"bold"});
+text("sym",1700,860,"Ejector 1",13,"start",{weight:"bold"});
+dirArrow(485,403,-90); checkValve(485,300,true);
+dirArrow(1650,948,90); checkValve(1650,1030,false);
+text("sym",467,370,"DN200",20,"middle",{rot:-90,font:NARROW});
+text("sym",1676,990,"DN200",20,"middle",{rot:90,font:NARROW});
+line("sym",[[457,172],[485,172]],1.5); text("sym",451,179,"overboord",22,"end");
+line("sym",[[1650,1185],[1678,1185]],1.5); text("sym",1684,1192,"overboord",22,"start");
+text("sym",594,470,"DN125 drijfwater",12,"middle",{rot:-90,font:NARROW});
+text("sym",1596,330,"DN125 drijfwater",14,"middle",{rot:-90,font:NARROW});
+text("sym",1514,330,"DN150",14,"middle",{rot:-90,font:NARROW});
+text("sym",583,1000,"DN100",12,"middle",{rot:-90,font:NARROW});
+bell(722,1105,180);
+dirArrow(44,250,-90); dirArrow(1956,250,-90);
+sea(44,420,"start",26); sea(1956,420,"end",1974);
+for (const [x,y] of [[570,68],[1570,68],[650,HDR],[1530,HDR],[597,HDR]]) el("sym","circle",{cx:x,cy:y,r:4,fill:BLK});
+el("sym","rect",{x:1560,y:HDR-3,width:6,height:6,fill:"#fff"});
+
+/* ---------------- afsluiters ---------------- */
+// od = plaats van de letter O/D (of het nummer op het controleblad), relatief t.o.v. de afsluiter
+const VALVES = {};
+function valve(id, x, y, orient, handle, lab, s=1, od=null) {
+  const g = group("valves", "valve"); g.dataset.id=id;
+  el(g,"circle",{cx:x,cy:y,r:26*s,class:"hit"});
+  const L=15*s, W=11*s; let t1,t2,body;
+  if (orient==="h") { t1=[[x-L,y-W],[x-L,y+W],[x,y]]; t2=[[x+L,y-W],[x+L,y+W],[x,y]]; body={x:x-3.5*s,y:y-9*s,width:7*s,height:18*s}; }
+  else { t1=[[x-W,y-L],[x+W,y-L],[x,y]]; t2=[[x-W,y+L],[x+W,y+L],[x,y]]; body={x:x-9*s,y:y-3.5*s,width:18*s,height:7*s}; }
+  const a = poly(g,t1,"#fff",BLK,2), b = poly(g,t2,"#fff",BLK,2);
+  el(g,"rect",{...body,fill:BLK});
+  const h=22*s;
+  if (handle==="up") { line(g,[[x,y],[x,y-h]],2); line(g,[[x-9,y-h],[x+9,y-h]],2); }
+  if (handle==="down") { line(g,[[x,y],[x,y+h]],2); line(g,[[x-9,y+h],[x+9,y+h]],2); }
+  if (handle==="right") { line(g,[[x,y],[x+h+8,y]],1.6); line(g,[[x+h,y-13],[x+h,y+13]],1.6); }
+  if (handle==="left") { line(g,[[x,y],[x-h-8,y]],1.6); line(g,[[x-h,y-13],[x-h,y+13]],1.6); }
+  const hint = el(g,"circle",{cx:x,cy:y,r:24*s,class:"hint"});
+  if (!od) od = orient==="v" ? [handle==="left" ? 24 : -24, 6] : [0, handle==="up" ? 30 : -16];
+  const odt = text(g, x+od[0], y+od[1], "", 15, "middle", {cls:"od"});
+  let lt = null;
+  if (lab) { lt = text("valves",lab[0],lab[1],naam(id),lab[3]||12,lab[2],{cls:"vlabel"}); lt.dataset.id=id; }
+  VALVES[id] = {id,open:false,tris:[a,b],hint,g,lt,odt};
+}
+valve("bu_a",44,330,"v","right",[60,298,"start"],1,[24,30]);
+valve("pe_a",570,112,"v","left",[532,117,"end"]);
+valve("pb_a",650,112,"v","right",[688,117,"start"]);
+valve("po3",485,238,"v","left",[447,243,"end"]);
+valve("ze3",485,632,"v","right",[523,637,"start"]);
+valve("ut",597,880,"v","left",[560,885,"end"],1,[22,6]);
+valve("d23",858,HDR,"h","down",[846,657,"end"],1.15,[30,-12]);
+valve("d12",1200,HDR,"h","down",[1188,657,"end"],1.15,[30,-12]);
+for (const n of [3,2,1]) {
+  const rx=RISER[n];
+  valve(`bal${n}bb`,rx-32,627,"h","up",[rx-92,602,"start"],1,[0,26]);
+  valve(`bal${n}sb`,rx-32,733,"h","up",[rx-92,763,"start"],1,[22,-12]);
+  valve(`str${n}bb`,rx-100,440,"v","right",[rx-68,445,"start",11]);
+  valve(`str${n}sb`,rx-100,910,"v","right",[rx-68,915,"start",11]);
+}
+valve("pb_v",1530,112,"v","left",[1492,117,"end"],1,[-16,-20]);
+valve("pe_v",1570,112,"v","right",[1608,117,"start"],1,[16,-20]);
+valve("ze1",1650,722,"v","right",[1700,727,"start"]);
+valve("po1",1650,1098,"v","right",[1700,1103,"start"]);
+valve("bu_v",1956,330,"v","left",[1940,298,"end"],1,[-24,30]);
+Object.keys(VALVES).forEach((id,i) => VALVES[id].nr = i+1);
+
+/* ---------------- pompen ---------------- */
+const PUMPS = {};
+function pump(id, name, img, x, y, w, h, fx, fy, labX, sub) {
+  const g = group("ui","pump"); g.dataset.id=id;
+  el(g,"rect",{x:x-6,y:y-6,width:w+12,height:h+12,rx:10,class:"phit",fill:"transparent"});
+  el(g,"image",{x,y,width:w,height:h,href:img,preserveAspectRatio:"none"});
+  el(g,"circle",{cx:fx,cy:fy,r:30,class:"ring"});
+  text(g,labX,195,name,28,"middle");
+  text(g,labX,222,sub,14,"middle");
+  const st = text(g,labX,250,"UIT",18,"middle",{weight:"bold",fill:"#888"});
+  PUMPS[id] = {id,name,on:false,g,st};
+}
+pump("PA","Achterschip",PUMP_L,42.8,45.1,131.8,116.4,114,110,140,"ballastpomp MK-achter");
+pump("PV","Voorschip",PUMP_R,1774.6,45.1,125.9,116.4,1829,106,1830,"ballastpomp MK-voor");
+
+/* ---------------- onderbalk: peilen, ejector, legenda, titel ---------------- */
+const yb = 1210;
+const GAUGE = {};
+{
+  const g = group("ui","screen-only");
+  text(g,60,yb+5,"Peilen",20,"start",{weight:"bold"});
+  window.GAUGE_NOTE = text(g,140,yb+5,"",15,"start",{weight:"bold",fill:BLUE});
+  TK.forEach((k,i)=>{
+    const y = yb+20+i*40, x0=150, w=320;
+    text(g,60,y+20,TKNAAM[k],16);
+    el(g,"rect",{x:x0,y,width:w,height:26,fill:"#fff",stroke:BLK,"stroke-width":1.5});
+    const bar = el(g,"rect",{x:x0,y,width:0,height:13,fill:"#4aa3df"});          // BB
+    const barS = el(g,"rect",{x:x0,y:y+13,width:0,height:13,fill:"#4aa3df"});    // SB
+    if (k !== "UT") line(g,[[x0,y+13],[x0+w,y+13]],0.8,"#999");
+    const af = alarmFrac(k), zf = zaadFrac(k);
+    if (zf) line(g,[[x0+w*zf,y-4],[x0+w*zf,y+30]],2,"#777",{"stroke-dasharray":"4 3"});
+    if (af) line(g,[[x0+w*af,y-4],[x0+w*af,y+30]],2.5,"#f0a020");
+    const doel = line(g,[[x0,y-4],[x0,y+30]],3,"#1d7a2c",{style:"display:none"});
+    const val = text(g,x0+w+12,y+20,"",16,"start",{weight:"bold"});
+    GAUGE[k] = {bar,barS,val,doel,x0,w};
+  });
+}
+// peilgegevens (alleen op het blad)
+{
+  const g = group("ui","print-only");
+  text(g,60,yb+5,"Peilgegevens",20,"start",{weight:"bold"});
+  text(g,200,yb+5,"(uit scheepsprofiel – leeg = nog invullen)",13,"start",{fill:"#555"});
+  const cols = [60,190,310,430], heads = ["","Alarm","Max.","Doelpeil"];
+  text(g,540,yb+34,"",15);
+  heads.forEach((h,i) => text(g,cols[i],yb+34,h,15,"start",{weight:"bold"}));
+  const cell = (x,y,v) => { if (num(v)!==null) text(g,x,y,Math.round(v)+" cm",15); else el(g,"rect",{x,y:y-16,width:90,height:21,fill:"#fff",stroke:BLK,"stroke-width":1}); };
+  TK.forEach((k,i) => { const y=yb+62+i*27; text(g,60,y,TKNAAM[k],15); cell(190,y,P(k).alarm); cell(310,y,P(k).max); cell(430,y,P(k).doel); });
+  const d = (PROFIEL.diepgang||[]).find(r => num(r.diepgang)!==null);
+  const y = yb+62+4*27+4;
+  text(g,60,y,"Diepgang",15); text(g,280,y,"Sygo",15);
+  if (num(PROFIEL.zaadhout_cm)!==null) text(g,440,y,`Zaadhout ${PROFIEL.zaadhout_cm} cm`,15);
+  if (d) { text(g,150,y,fmt(d.diepgang)+" m",15); text(g,330,y,(num(d.sygo)!==null ? d.sygo+" mt" : ""),15); }
+  else { el(g,"rect",{x:150,y:y-16,width:90,height:21,fill:"#fff",stroke:BLK}); el(g,"rect",{x:330,y:y-16,width:90,height:21,fill:"#fff",stroke:BLK}); }
+}
+// ejector-uitleg
+{
+  const g = el("ui","g",{transform:"translate(655,1200) scale(0.58)"});
+  text(g,0,8,"Werking ejector",30,"start",{weight:"bold"});
+  const ex=150, ey=130;
+  poly(g,[[ex,ey-15],[ex+120,ey-15],[ex+190,ey-5],[ex+190,ey+5],[ex+120,ey+15],[ex,ey+15]],RED,BLK,2);
+  poly(g,[[ex+100,ey-40],[ex+230,ey-40],[ex+230,ey+40],[ex+175,ey+40],[ex+175,ey+75],[ex+135,ey+75],[ex+135,ey+40],[ex+100,ey+40]],GRN,BLK,2);
+  poly(g,[[ex+100,ey-15],[ex+120,ey-15],[ex+190,ey-5],[ex+190,ey+5],[ex+120,ey+15],[ex+100,ey+15]],RED,BLK,2);
+  poly(g,[[ex+230,ey-18],[ex+290,ey-12],[ex+290,ey+12],[ex+230,ey+18]],"#5aa9e6",BLK,2);
+  poly(g,[[ex+290,ey-12],[ex+440,ey-30],[ex+440,ey+30],[ex+290,ey+12]],"#5aa9e6",BLK,2);
+  poly(g,tri(ex-20,ey,0,22,18),BLK,BLK,1); poly(g,tri(ex+155,ey+95,-90,22,18),BLK,BLK,1); poly(g,tri(ex+465,ey,0,22,18),BLK,BLK,1);
+  text(g,0,ey-2,"Drijfwater",20,"start",{weight:"bold"}); text(g,0,ey+22,"van pomp",20);
+  text(g,ex+185,ey+100,"Aanzuig ballastwater",20,"start",{weight:"bold"});
+  text(g,ex+440,ey-42,"Pers overboord",20,"end",{weight:"bold"});
+  text(g,0,ey+150,"Drijfwater zuigt via onderdruk het ballastwater mee.",20);
+}
+// legenda
+{
+  const lx=1060; text("ui",lx,yb+5,"Legenda",20,"start",{weight:"bold"});
+  const row = (i, draw, lab, cls) => { const g = group("ui", cls); const y=yb+34+i*28; draw(g,lx+20,y-5); text(g,lx+55,y,lab,15); };
+  const mini = (g,x,y,f) => { poly(g,[[x-13,y-10],[x-13,y+10],[x,y]],f,BLK,2); poly(g,[[x+13,y-10],[x+13,y+10],[x,y]],f,BLK,2); };
+  row(0,(g,x,y)=>mini(g,x,y,GRN),"Afsluiter open (O)");
+  row(1,(g,x,y)=>mini(g,x,y,RED),"Afsluiter dicht (D)");
+  row(2,(g,x,y)=>{ line(g,[[x-24,y],[x+24,y]],9,BLUE,{"stroke-dasharray":"22 12"}); },"Water stroomt","screen-only");
+  row(3,(g,x,y)=>{ el(g,"circle",{cx:x,cy:y,r:13,fill:"none",stroke:"#ff8c00","stroke-width":4}); },"Moet nog veranderen","screen-only");
+  row(2,(g,x,y)=>{ bell(x+10,y,180,0.6); },"Zuigmond in ruim","print-only");
+  row(3,(g,x,y)=>{ checkValve(x,y+12,true); },"Terugslagklep","print-only");
+  row(4,(g,x,y)=>{ el(g,"rect",{x:x-18,y:y-10,width:36,height:20,fill:"#4aa3df","fill-opacity":.45}); },"Ballastwater");
+}
+// titelblok
+{
+  const tx=1555, ty=1205, tw=410, th=178;
+  el("ui","rect",{x:tx,y:ty,width:tw,height:th,fill:"#fff",stroke:BLK,"stroke-width":2});
+  line("ui",[[tx,ty+110],[tx+tw,ty+110]],1.5); line("ui",[[tx,ty+145],[tx+tw,ty+145]],1.5); line("ui",[[tx+205,ty+110],[tx+205,ty+th]],1.5);
+  text("ui",tx+14,ty+30,"Ballastsysteem S-serie" + (PROFIEL.schip ? " – " + PROFIEL.schip : ""),18);
+  window.TITLE = text("ui",tx+14,ty+92,"Vrij oefenen",50,"start",{weight:"bold"});
+  window.SUBTITLE = text("ui",tx+14,ty+133,"interactieve versie",12);
+  text("ui",tx+219,ty+133,"versie " + PROFIEL.versie,14);
+  text("ui",tx+14,ty+168,"groen = open · rood = dicht",14); text("ui",tx+219,ty+168,"rust: dicht · buitenboord open",13);
+}
+
+/* ---------------- toestand ---------------- */
+const level = {T1:0,T2:0,T3:0,UT:0};       // fractie van de inhoud bij max. niveau
+const doel = {};
+const doelStandaard = t => fracCm(t, num(P(t).doel)) ?? fracCm(t, 150) ?? 0.6;
+for (const t of TK) doel[t] = doelStandaard(t);
+let scenario = "vrij", paused = false, speed = 3, printKind = null;
+const task = { tanks: new Set(["T3","T2","T1"]), pomp: "achter", plan: -1 };
+const V = id => VALVES[id].open;
+const isOpen = id => !id || VALVES[id].open;
+const SIDE = { PA:{pb:"pb_a",pe:"pe_a",ze:"ze3",po:"po3",bu:"bu_a",ej:3}, PV:{pb:"pb_v",pe:"pe_v",ze:"ze1",po:"po1",bu:"bu_v",ej:1} };
+const SEG = {T3:0, UT:0, T2:1, T1:2};      // deel van de hoofdleiding: 0 = achter d23, 1 = tussen, 2 = voor d12
+const tankValves = t => t==="UT" ? ["ut"] : [`bal${t[1]}bb`,`bal${t[1]}sb`];
+const stripValves = () => [3,2,1].flatMap(n => [`str${n}bb`,`str${n}sb`]);
+const taskPumps = () => task.pomp==="beide" ? ["PA","PV"] : [task.pomp==="achter" ? "PA" : "PV"];
+const taskTanks = () => TK.filter(t => task.tanks.has(t));
+
+function routeDeel() {
+  // Welke deelafsluiters moeten open zodat de gekozen pomp(en) de gekozen ruimen bereiken?
+  const ps = taskPumps(), ts = taskTanks();
+  if (ps.length === 2) return {d23:1, d12:1};
+  const p = ps[0]==="PA" ? 0 : 2, r = {d23:0, d12:0};
+  for (const t of ts) { const s = SEG[t]; if (Math.min(p,s) < 1 && Math.max(p,s) >= 1) r.d23 = 1; if (Math.min(p,s) < 2 && Math.max(p,s) >= 2) r.d12 = 1; }
+  return r;
+}
+function computeTarget(kind) {
+  const t = {};
+  for (const id in VALVES) t[id] = 0;
+  t.bu_a = t.bu_v = 1; t.PA = t.PV = 0;
+  if (kind === "rust" || !kind || kind === "vrij") return t;
+  for (const p of taskPumps()) { t[p] = 1; const s = SIDE[p]; if (kind==="in") t[s.pb] = 1; else t[s.pe] = t[s.ze] = t[s.po] = 1; }
+  for (const tk of taskTanks()) for (const v of tankValves(tk)) t[v] = 1;
+  Object.assign(t, routeDeel());
+  if (kind === "uit") for (const v of stripValves()) delete t[v];   // strips: vrij te gebruiken voor restjes
+  return t;
+}
+const target = () => scenario==="vrij" ? null : computeTarget(scenario);
+const stateOf = id => VALVES[id] ? (VALVES[id].open?1:0) : (PUMPS[id].on?1:0);
+const isRust = () => { const t = computeTarget("rust"); return Object.keys(t).every(id => stateOf(id) === t[id]); };
+
+/* ---------------- stromingsberekening ---------------- */
+const tankRoom = t => level[t] < 1 - 1e-4;
+function solve() {
+  const flows = new Map();               // edgeId -> +1 (a->b) / -1
+  const setF = (e, from) => { if (!flows.has(e.id)) flows.set(e.id, e.a===from ? 1 : -1); };
+  const msgs = [];
+  const C = cap();
+  const rate = {T1:0,T2:0,T3:0,UT:0};
+  const rt = {};                                         // ton per seconde per tank of kant ("T3:B", "T3:S", "UT")
+  const kantVan = e => /^(bb\d|st\db)$/.test(e.id) ? "B" : /^(sb\d|st\ds)$/.test(e.id) ? "S" : "";
+  const sleutel = (o, e) => kant[o] && kantVan(e) ? o + ":" + kantVan(e) : o;
+  const ejActive = {3:false,1:false}, ejPass = {3:false,1:false};
+  const poOf = {3:"po3",1:"po1"};
+
+  // 1) persen vanuit draaiende pompen
+  for (const pid of ["PA","PV"]) {
+    if (!PUMPS[pid].on) continue;
+    const bu = SIDE[pid].bu;
+    if (!V(bu)) { msgs.push(["alarm", `${PUMPS[pid].name}: pomp draait droog – ${naam(bu)} is dicht.`]); continue; }
+    const cons = [], seen = new Set([pid]);
+    const consumer = n => {
+      if (n[0]==="T" || n==="UT") return tankRoom(n) ? n : null;
+      if (n==="EJ3d" || n==="EJ1d" || n==="EJ3s" || n==="EJ1s") return isOpen(poOf[n[2]]) ? n : null;
+      return null;
+    };
+    const dfs = node => {
+      let any = false;
+      for (const e of ADJ[node]||[]) {
+        if (!isOpen(e.valve)) continue;
+        const o = e.a===node ? e.b : e.a;
+        if (TERMINAL.has(o)) { const c = consumer(o); if (c) { setF(e,node); cons.push(c[0]==="T" ? sleutel(c, e) : c); any = true; } continue; }
+        if (seen.has(o)) continue; seen.add(o);
+        if (dfs(o)) { setF(e,node); any = true; }
+      }
+      return any;
+    };
+    dfs(pid);
+    const uniq = [...new Set(cons)];
+    if (!uniq.length) { msgs.push(["warn", `${PUMPS[pid].name}: pomp draait tegen gesloten afsluiters (geen afvoer).`]); continue; }
+    flows.set(pid==="PA" ? "zA" : "zV", 1);
+    const share = C.qp / uniq.length;
+    for (const c of uniq) {
+      if (c[0]==="T" || c==="UT") rt[c] = (rt[c] || 0) + share;
+      if (c==="EJ3d") ejActive[3] = true;
+      if (c==="EJ1d") ejActive[1] = true;
+      if (c==="EJ3s") ejPass[3] = true;
+      if (c==="EJ1s") ejPass[1] = true;
+    }
+  }
+  for (const k of [3,1]) {
+    const pid = k===3 ? "PA" : "PV", pe = k===3 ? "pe_a" : "pe_v";
+    if (PUMPS[pid].on && V(SIDE[pid].bu) && V(pe) && !V(poOf[k]))
+      msgs.push(["warn", `Ejector ${k}: ${naam(poOf[k])} is dicht, het drijfwater kan nergens heen.`]);
+  }
+
+  // 2) zuigen door actieve ejectors
+  for (const k of [3,1]) {
+    if (!ejActive[k]) continue;
+    const zs = k===3 ? "zs3" : "zs1", ze = k===3 ? "ze3" : "ze1";
+    const sources = [], viaStrip = new Set();
+    let short = false;
+    if (V(ze)) {
+      const seen = new Set();
+      const dfs = node => {
+        let any = false;
+        for (const e of ADJ[node]||[]) {
+          if (!isOpen(e.valve)) continue;
+          const o = e.a===node ? e.b : e.a;
+          if (TERMINAL.has(o)) {
+            const key = (o[0]==="T" || o==="UT") ? sleutel(o, e) : null;
+            if (key && (kant[o] ? kant[o][kantVan(e)] > 0.05 : level[o] > 0.0005)) { setF(e,o); sources.push(key); if (e.id.startsWith("st")) viaStrip.add(key); any = true; }
+            if ((o==="PA" || o==="PV") && PUMPS[o].on) short = true;
+            continue;
+          }
+          if (seen.has(o)) continue; seen.add(o);
+          if (dfs(o)) { setF(e,o); any = true; }
+        }
+        return any;
+      };
+      const e0 = EDGES.find(e => e.id===zs);
+      seen.add(e0.a);
+      if (dfs(e0.a)) flows.set(zs, 1);
+    }
+    if (short) msgs.push(["alarm", `Kortsluiting: pompwater gaat via de hoofdleiding direct in ejector ${k} en overboord. Sluit Pers ballast.`]);
+    else if (!V(ze)) msgs.push(["info", `Ejector ${k} loopt, maar ${naam(ze)} is dicht.`]);
+    else if (!sources.length) msgs.push(["info", `Ejector ${k} loopt, maar zuigt geen water (geen open ruim met water).`]);
+    const uniq = [...new Set(sources)];
+    if (!short) for (const t of uniq) {
+      const [tk, z] = t.split(":"), boost = viaStrip.has(t) && (z ? kantFrac(tk, z) : level[tk]) < STRIP_FRAC ? 1.3 : 1;
+      rt[t] = (rt[t] || 0) - C.qe / uniq.length * boost;
+    }
+    flows.set(k===3 ? "dis3" : "dis1", 1);
+  }
+  for (const k of [3,1]) if (ejPass[k] && !ejActive[k]) {
+    flows.set(k===3 ? "dis3" : "dis1", 1);
+    msgs.push(["warn", `Pompwater loopt via ${naam(k===3?"ze3":"ze1")} rechtstreeks overboord.`]);
+  }
+
+  for (const k in rt) { const t = k.split(":")[0]; rate[t] += rt[k] / capTon(t); }
+
+  // 3) procedure-meldingen
+  for (const bu of ["bu_a","bu_v"]) if (!V(bu)) msgs.push(["warn", `${naam(bu)} is dicht: het brandbluswater staat niet meer stand-by. Buitenboord hoort altijd open.`]);
+  const T = target();
+  if (T && (PUMPS.PA.on || PUMPS.PV.on)) {
+    const mis = Object.keys(T).filter(id => VALVES[id] && stateOf(id) !== T[id]);
+    if (mis.length && !stepDone("start")) msgs.push(["warn", `Pomp gestart terwijl nog niet alles klaarstaat: ${mis.slice(0,4).map(naam).join(", ")}${mis.length>4?" …":""}. Eerst alles klaarzetten, dan pas starten.`]);
+  }
+  if (scenario==="in") for (const t of taskTanks()) if (minFrac(t) >= doel[t] - 1e-3 && pumpOn()) msgs.push(["warn", `${TKNAAM[t]}: doelpeil bereikt (${lvlTxt(t, doel[t])}). Stop de pomp.`]);
+  if (scenario==="uit") for (const t of taskTanks()) if (maxFrac(t) <= 0.0005 && (PUMPS.PA.on || PUMPS.PV.on)) msgs.push(["info", `${TKNAAM[t]} is leeg.`]);
+  for (const t of HOLDS) { const zf = zaadFrac(t); if (zf && level[t] > zf && rate[t] > 0) msgs.push(["info", `${TKNAAM[t]}: boven het zaadhout (${PROFIEL.zaadhout_cm} cm): BB en SB lopen nu in elkaar over.`]); }
+  const sz = slagzijTon();
+  if (Math.abs(sz) >= 15) {
+    const per = HOLDS.filter(t => Math.abs(kant[t].B - kant[t].S) >= 5).map(t => `${TKNAAM[t].toLowerCase()} ${Math.round(Math.abs(kant[t].B - kant[t].S))} t`).join(", ");
+    msgs.push(["warn", `Slagzij: ${sz > 0 ? "BB" : "SB"} is ${Math.round(Math.abs(sz))} t zwaarder dan ${sz > 0 ? "SB" : "BB"} (${per}). Het schip helt over naar ${sz > 0 ? "bakboord" : "stuurboord"}.`]);
+  }
+  return {flows, rate, rt, msgs, ejActive};
+}
+
+/* ---------------- stappenplannen ---------------- */
+const pumpOn = () => PUMPS.PA.on || PUMPS.PV.on;
+const lijst = a => a.length <= 1 ? (a[0]||"") : a.slice(0,-1).join(", ") + " en " + a[a.length-1];
+const matches = ids => { const T = target(); return ids.every(id => stateOf(id) === T[id]); };
+let lastSolve = {flows:new Map(),rate:{},msgs:[],ejActive:{}};
+let STEPS = [], latch = [];
+
+const pr0 = () => task.plan >= 0 ? (PROFIEL.ballastplan || [])[task.plan] : null;
+const planTxt = () => { const r = pr0(); return r ? ` Ballastplan ${fmt(r.diepgang)} m: ${Math.round(planBallast(r))} t ballast.` : ""; };
+function buildSteps() {
+  const ps = taskPumps(), ts = taskTanks();
+  const kant = ps.map(p => p==="PA" ? "achter" : "voor");
+  const ruimen = ts.map(t => TKNAAM[t].replace("Ruim ","ruim "));
+  const rd = routeDeel(), dtxt = `${naam("d23")} ${rd.d23?"open":"dicht"}, ${naam("d12")} ${rd.d12?"open":"dicht"}`;
+  const balIds = TK.flatMap(tankValves), tankTxt = "Open de ballastafsluiters van " + (lijst(ruimen) || "(kies ruimen)") + "; de rest blijft dicht.";
+  const allValves = () => matches(Object.keys(target()).filter(id => VALVES[id]));
+  const pumpsOk = () => matches(["PA","PV"]);
+  const pomp = "ballastpomp " + lijst(kant);
+  if (scenario === "in") return [
+    {t:`Controleer de ruststand: alles dicht, ${lijst(["bu_a","bu_v"].map(naam))} open.`, c:() => matches(["bu_a","bu_v","pe_a","pe_v","ze3","ze1","po3","po1",...stripValves()])},
+    {t:tankTxt, c:() => matches(balIds)},
+    {t:`Zet de deelafsluiters: ${dtxt}.`, c:() => matches(["d23","d12"])},
+    {t:`Open ${lijst(ps.map(p => naam(SIDE[p].pb)))}.`, c:() => matches(["pb_a","pb_v"])},
+    {t:`Alles staat klaar: start de ${pomp}.`, c:() => allValves() && pumpsOk(), start:true},
+    {t:`Bewaak de peilen tot het doelpeil (${ts.map(t => TKNAAM[t]+" "+lvlTxt(t,doel[t])).join(", ")}).${planTxt()} Het hoogwateralarm is het vangnet.`, c:() => ts.length && ts.every(t => minFrac(t) >= doel[t] - 1e-3)},
+    {t:"Doelpeil bereikt: stop de pomp en zet alles terug in de ruststand." + (pr0() ? ` Controleer de diepgang op de merken (verwacht ${fmt(pr0().buiten ? pr0().buiten[0]/100 : pr0().diepgang)} m).` : ""), c:() => !pumpOn() && isRust() && ts.every(t => minFrac(t) >= doel[t] - 1e-3)},
+  ];
+  if (scenario === "uit") return [
+    {t:`Controleer: ${lijst(["bu_a","bu_v"].map(naam))} open, Pers ballast achter en voor dicht.`, c:() => matches(["bu_a","bu_v","pb_a","pb_v"])},
+    {t:`Open ${lijst(ps.map(p => naam(SIDE[p].po)))}.`, c:() => matches(["po3","po1"])},
+    {t:`Open ${lijst(ps.map(p => naam(SIDE[p].pe)))} (drijfwater).`, c:() => matches(["pe_a","pe_v"])},
+    {t:`Open ${lijst(ps.map(p => naam(SIDE[p].ze)))}.`, c:() => matches(["ze3","ze1"])},
+    {t:tankTxt + ` Deelafsluiters: ${dtxt}.`, c:() => matches([...balIds,"d23","d12"])},
+    {t:`Alles staat klaar: start de ${pomp}. De ejector gaat zuigen.`, c:() => allValves() && pumpsOk() && ps.every(p => lastSolve.ejActive[SIDE[p].ej]), start:true},
+    {t:"Laat de ruimen leegzuigen. Restje? Eventueel de DN50-strip van dat ruim openen.", c:() => ts.length && ts.every(t => maxFrac(t) <= 0.0005)},
+    {t:"Leeg: stop de pomp en zet alles terug in de ruststand.", c:() => !pumpOn() && isRust() && ts.every(t => maxFrac(t) <= 0.0005)},
+  ];
+  return [];
+}
+const stepDone = tag => { const i = STEPS.findIndex(s => s.start); return tag==="start" && i >= 0 && latch[i]; };
+const stepsEl = document.getElementById("steps");
+function renderSteps() {
+  STEPS = buildSteps(); latch = STEPS.map(() => false);
+  stepsEl.innerHTML = "";
+  STEPS.forEach(s => { const li = document.createElement("li"); li.textContent = s.t; stepsEl.appendChild(li); });
+  document.getElementById("stepNote").textContent = scenario==="vrij"
+    ? "Vrij oefenen: bedien alles zelf. Kies Ballast in of Ontballasten voor een stappenplan."
+    : "Eerst alles klaarzetten, dan pas de pomp starten. Controleer bij twijfel met de boordinstructie.";
+}
+function updateSteps() {
+  // Voorbereidende stappen blijven 'live' tot de pomp gestart is; daarna worden ze vastgezet.
+  const startIdx = STEPS.findIndex(s => s.start);
+  let allPrev = true, cur = -1;
+  STEPS.forEach((s,i) => {
+    const ok = latch[i] || !!s.c();
+    if (ok && allPrev && startIdx >= 0 && i >= startIdx) for (let j = 0; j <= i; j++) latch[j] = true;
+    const li = stepsEl.children[i];
+    li.classList.toggle("ok", ok); li.classList.remove("cur");
+    if (!ok && cur < 0) cur = i;
+    allPrev = allPrev && ok;
+  });
+  if (cur >= 0) stepsEl.children[cur].classList.add("cur");
+}
+
+/* ---------------- taakkeuze ---------------- */
+const tankChoice = document.getElementById("tankChoice");
+for (const t of TK) {
+  const l = document.createElement("label"); l.className = "tankchk";
+  l.innerHTML = `<input type="checkbox" data-t="${t}"> ${TKNAAM[t]}`;
+  tankChoice.appendChild(l);
+}
+tankChoice.addEventListener("change", e => { const t = e.target.dataset.t; e.target.checked ? task.tanks.add(t) : task.tanks.delete(t); task.plan = -1; taskChanged(); });
+document.getElementById("pumpChoice").addEventListener("click", e => { if (e.target.dataset.p) { task.pomp = e.target.dataset.p; taskChanged(); } });
+function renderTask() {
+  tankChoice.querySelectorAll("input").forEach(i => i.checked = task.tanks.has(i.dataset.t));
+  document.querySelectorAll("#pumpChoice button").forEach(b => b.classList.toggle("on", b.dataset.p === task.pomp));
+  const box = document.getElementById("doelBox"); box.innerHTML = "";
+  if (scenario === "in" && (PROFIEL.ballastplan || []).length) {
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<span class="lab">Doel</span><select id="planSel"><option value="-1">Eigen doelpeil</option>${PROFIEL.ballastplan.map((p,i) => `<option value="${i}"${i===task.plan?" selected":""}>Diepgang ${fmt(p.diepgang)} m – ${Math.round(planBallast(p))} t ballast</option>`).join("")}</select>`;
+    r.querySelector("select").onchange = e => kiesPlan(+e.target.value);
+    box.appendChild(r);
+  }
+  if (scenario === "in") for (const t of taskTanks()) {
+    const cmMode = cmOf(t, 0.5) !== null, r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<span class="lab">Doel ${TKNAAM[t].replace("Ruim ","r")}</span><input type="number" min="0" step="${cmMode?1:5}" value="${cmMode ? Math.round(cmOf(t, doel[t])) : Math.round(doel[t]*100)}"> ${cmMode ? "cm" : "% van max."}<span class="note" style="margin:0">${tonKnown(t) ? Math.round(tonOf(t, doel[t])) + " t" : ""}</span>`;
+    r.querySelector("input").onchange = e => { const v = +e.target.value; doel[t] = Math.max(0.005, Math.min(1, cmMode ? fracCm(t, v) : v/100)); task.plan = -1; renderTask(); renderSteps(); };
+    box.appendChild(r);
+  }
+  const rd = routeDeel();
+  document.getElementById("routeNote").textContent = scenario === "vrij" ? "Kies een situatie om een doelstand te krijgen."
+    : `Route: ${naam("d23")} ${rd.d23?"open":"dicht"}, ${naam("d12")} ${rd.d12?"open":"dicht"}.`;
+  document.getElementById("taskBox").style.opacity = scenario === "vrij" ? .55 : 1;
+}
+function taskChanged() { renderTask(); renderSteps(); lastMsgKey = ""; }
+function kiesPlan(i) {
+  task.plan = i;
+  const r = PROFIEL.ballastplan[i];
+  if (r) { task.tanks = new Set(["T3","T2","T1"].filter(t => gem(r[t]))); for (const t of task.tanks) doel[t] = fracCm(t, gem(r[t])); }
+  else for (const t of TK) doel[t] = doelStandaard(t);
+  taskChanged();
+}
+
+/* ---------------- weergave ---------------- */
+const msgsEl = document.getElementById("msgs");
+let lastMsgKey = "";
+function render() {
+  const s = lastSolve, pr = printKind;
+  for (const e of EDGES) {
+    const f = !pr && s.flows.get(e.id);
+    if (f) { e.fl.style.display = ""; e.fl.classList.toggle("rev", f < 0); e.fl.classList.toggle("paused", paused); }
+    else e.fl.style.display = "none";
+  }
+  for (const k of [3,1]) EJ[k].querySelectorAll(".ejbody").forEach(p => p.classList.toggle("active", !pr && !!s.ejActive[k]));
+  const tgt = target() || {};
+  const showT = document.getElementById("showTarget").checked && scenario !== "vrij";
+  for (const v of Object.values(VALVES)) {
+    const f = pr==="controle" ? "#fff" : (v.open ? GRN : RED);
+    v.tris.forEach(t => t.setAttribute("fill", f));
+    v.hint.classList.toggle("show", showT && (v.id in tgt) && !!tgt[v.id] !== v.open);
+    v.odt.textContent = pr==="controle" ? v.nr : (v.open ? "O" : "D");
+    v.odt.setAttribute("fill", pr==="controle" ? BLUE : (v.open ? "#1d7a2c" : "#c4161c"));
+  }
+  for (const p of Object.values(PUMPS)) {
+    p.g.classList.toggle("run", p.on && !pr);
+    p.st.textContent = p.on ? "AAN" : "UIT"; p.st.setAttribute("fill", p.on ? GRN : "#888");
+    if (pr === "controle") p.st.textContent = "";
+    const want = showT && !pr && (p.id in tgt) && !!tgt[p.id] !== p.on;
+    p.st.textContent += want ? (tgt[p.id] ? "  → aanzetten" : "  → uitzetten") : "";
+  }
+  // peilen
+  const C = cap(), alarms = [];
+  for (const t of TK) {
+    const L = level[t], g = GAUGE[t], af = alarmFrac(t);
+    const fB = kantFrac(t,"B"), fS = kantFrac(t,"S");
+    const kleur = f => f >= 1 - 1e-3 ? RED : (af && f >= af ? "#f0a020" : "#4aa3df"), col = kleur(L);
+    g.bar.setAttribute("width", g.w * fB); g.bar.setAttribute("fill", kleur(fB));
+    g.barS.setAttribute("width", g.w * fS); g.barS.setAttribute("fill", kleur(fS));
+    g.val.textContent = meterTxt(t);
+    const showDoel = scenario === "in" && task.tanks.has(t);
+    g.doel.style.display = showDoel ? "" : "none";
+    if (showDoel) g.doel.setAttribute("points", PT([[g.x0+g.w*doel[t], 1230+TK.indexOf(t)*40-4],[g.x0+g.w*doel[t], 1230+TK.indexOf(t)*40+30]]));
+    TANKS[t].el.forEach((r, i) => { const f = kant[t] ? (i ? fS : fB) : L; r.setAttribute("fill-opacity", !pr && f > 0.002 ? 0.06 + 0.45 * f : 0); r.setAttribute("fill", kleur(f)); });
+    if (L >= 1 - 1e-3 && s.rate[t] >= 0 && pumpOn()) alarms.push(["alarm", `${TKNAAM[t]}: ${num(P(t).max)!==null ? "MAXIMAAL NIVEAU bereikt ("+P(t).max+" cm)" : "einde van de balk (max. niveau nog niet ingevuld)"}. Stop met ballasten!`]);
+    else if (af && L >= af) alarms.push(["alarm", `${TKNAAM[t]}: hoogwateralarm (≥ ${P(t).alarm} cm).`]);
+  }
+  const all = [...alarms, ...s.msgs];
+  const key = JSON.stringify(all) + pumpOn();
+  if (key !== lastMsgKey) {
+    lastMsgKey = key; msgsEl.innerHTML = "";
+    if (!all.length) { const li = document.createElement("li"); li.className = "info"; li.textContent = pumpOn() ? "Systeem loopt normaal." : (isRust() ? "Ruststand: pompen uit, alles dicht, buitenboord open." : "Pompen staan uit."); msgsEl.appendChild(li); }
+    for (const [c,t] of all) { const li = document.createElement("li"); li.className = c; li.textContent = t; msgsEl.appendChild(li); }
+  }
+  const bal = ballastTon(), lg = ligging(bal + ladingNu);
+  window.GAUGE_NOTE.textContent = `ballast ≈ ${Math.round(bal)} t` + (liggingTxt(lg, true) ? " · " + liggingTxt(lg, true) : "");
+  document.getElementById("totText").textContent = `Ballast ≈ ${Math.round(bal)} t` + (liggingTxt(lg) ? " · " + liggingTxt(lg) : "");
+  updateSteps();
+}
+
+/* ---------------- lus ---------------- */
+let tPrev = performance.now();
+function tick(t) {
+  const dt = Math.min(0.1, (t - tPrev) / 1000); tPrev = t;
+  if (!printKind) {
+    lastSolve = solve();
+    if (!paused) {
+      const rt = lastSolve.rt, f = dt * speed;
+      for (const t of HOLDS) { kant[t].B = Math.max(0, kant[t].B + (rt[t+":B"] || 0) * f); kant[t].S = Math.max(0, kant[t].S + (rt[t+":S"] || 0) * f); verdeel(t); }
+      level.UT = Math.max(0, Math.min(1, level.UT + (rt.UT || 0) / capTon("UT") * f));
+    }
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ---------------- interactie ---------------- */
+const tip = document.getElementById("tip");
+function showTip(evt, txt) {
+  const r = document.getElementById("stage").getBoundingClientRect();
+  tip.textContent = txt; tip.style.left = (evt.clientX - r.left + 14) + "px"; tip.style.top = (evt.clientY - r.top + 14) + "px"; tip.style.opacity = 1;
+}
+svg.addEventListener("click", ev => {
+  const v = ev.target.closest(".valve, .vlabel"); const p = ev.target.closest(".pump");
+  if (v) { const o = VALVES[v.dataset.id]; o.open = !o.open; }
+  else if (p) { const o = PUMPS[p.dataset.id]; o.on = !o.on; }
+});
+svg.addEventListener("mousemove", ev => {
+  const v = ev.target.closest(".valve, .vlabel"); const p = ev.target.closest(".pump");
+  if (v) { const o = VALVES[v.dataset.id]; showTip(ev, `${naam(o.id)}: ${o.open ? "OPEN" : "DICHT"} (klik om te ${o.open ? "sluiten" : "openen"})`); }
+  else if (p) { const o = PUMPS[p.dataset.id]; showTip(ev, `${o.name}: pomp ${o.on ? "AAN" : "UIT"} (klik om te ${o.on ? "stoppen" : "starten"})`); }
+  else tip.style.opacity = 0;
+});
+svg.addEventListener("mouseleave", () => tip.style.opacity = 0);
+
+function applyState(t) { for (const k in t) { if (VALVES[k]) VALVES[k].open = !!t[k]; if (PUMPS[k]) PUMPS[k].on = !!t[k]; } }
+const rust = () => applyState(computeTarget("rust"));
+const geballast = () => { for (const t of TK) setLevel(t, t === "UT" ? 0.6 : Math.min(doel[t], 0.9)); };
+function setScenario(s) {
+  scenario = s;
+  document.querySelectorAll("[data-scn]").forEach(b => b.classList.toggle("on", b.dataset.scn === s));
+  window.TITLE.textContent = {in:"Ballast in", uit:"Ontballasten", vrij:"Vrij oefenen"}[s];
+  rust();
+  if (s === "in") for (const k of TK) setLevel(k, 0);
+  if (s === "uit") geballast();
+  taskChanged();
+}
+document.querySelectorAll("[data-scn]").forEach(b => b.onclick = () => setScenario(b.dataset.scn));
+document.getElementById("btnRust").onclick = rust;
+document.getElementById("btnTarget").onclick = () => { const t = target(); if (t) applyState(t); };
+document.getElementById("lvEmpty").onclick = () => { for (const k of TK) setLevel(k, 0); };
+document.getElementById("lvFull").onclick = geballast;
+document.getElementById("btnPause").onclick = e => { paused = !paused; e.target.textContent = paused ? "▶ Verder" : "⏸ Pauze"; e.target.classList.toggle("on", paused); };
+document.getElementById("ladingNu").onchange = e => ladingNu = Math.max(0, +e.target.value || 0);
+const speedSel = document.getElementById("speed");
+speedSel.onchange = e => speed = +e.target.value;
+speed = cap().real ? 30 : 3; speedSel.value = String(speed);
+document.getElementById("capNote").textContent = cap().real
+  ? `Gerekend met ${PROFIEL.capaciteit.pomp_m3h} m³/h pomp en ${PROFIEL.capaciteit.ejector_m3h} m³/h ejector; 1× is echte tijd.`
+  : "Snelheden zijn indicatief en versneld. Vul de pompcapaciteit in voor echte tijden.";
+document.getElementById("meterNote").textContent = `Peilen in cm en ton via de tanktabellen. Meters: bovenste helft = BB, onderste = SB. Streepjes: groen = doelpeil, grijs = zaadhout${TK.some(t => alarmFrac(t)) ? ", oranje = alarm" : ""}. Balk vol = ${TK.every(t => num(P(t).max)!==null) ? "max. niveau" : BALK_CM + " cm (max. niveau nog niet ingevuld)"}. Diepgang en trim zijn schattingen uit de metingen van het ballastplan; hoe verder je ervan af zit, hoe onzekerder.`;
+
+/* ---------------- scheepsgegevens + over ---------------- */
+const leeg = '<span class="leeg">–</span>';
+const mv = v => num(v)!==null ? fmt(v) + " m" : leeg;
+const mcm = v => num(v)!==null ? v + " cm" : leeg;
+{
+  const c = PROFIEL.capaciteit || {};
+  let h = `<table class="data"><tr><th></th><th>Alarm</th><th>Max.</th><th>Doel</th><th>Tabel</th></tr>`;
+  for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${mcm(P(t).alarm)}</td><td>${mcm(P(t).max)}</td><td>${mcm(P(t).doel)}</td><td>${tabel(t) ? (PROFIEL.tanktabel[t].length + " pt") : leeg}</td></tr>`;
+  h += `</table><table class="data" style="margin-top:6px">`;
+  h += `<tr><td>Zaadhout</td><td colspan="2">${mcm(PROFIEL.zaadhout_cm)}</td></tr>`;
+  h += `<tr><td>Lading tijdens meting</td><td colspan="2">${num(PROFIEL.meting_lading_ton)!==null ? fmt(PROFIEL.meting_lading_ton,1)+" t" : leeg}</td></tr>`;
+  h += `<tr><td>U-tank inhoud</td><td colspan="2">${num(PROFIEL.utank_ton)!==null ? PROFIEL.utank_ton+" t" : leeg}</td></tr>`;
+  h += `<tr><td>Ballastplan</td><td colspan="2">${(PROFIEL.ballastplan||[]).length ? PROFIEL.ballastplan.map(r => fmt(r.diepgang)).join(" · ") + " m" : leeg}</td></tr>`;
+  for (const r of PROFIEL.diepgang || []) h += `<tr><td>Diepgang${r.omschrijving ? " ("+r.omschrijving+")" : ""}</td><td>${mv(r.diepgang)}</td><td>Sygo ${num(r.sygo)!==null ? r.sygo+" mt" : leeg}</td></tr>`;
+  h += `<tr><td>Pomp / ejector</td><td>${num(c.pomp_m3h)!==null ? c.pomp_m3h+" m³/h" : leeg}</td><td>${num(c.ejector_m3h)!==null ? c.ejector_m3h+" m³/h" : leeg}</td></tr></table>`;
+  document.getElementById("shipData").innerHTML = (PROFIEL.schip ? `<p style="margin:0 0 6px;font-weight:600">${PROFIEL.schip}</p>` : "") + h;
+}
+/* ---------------- gegevens invullen ---------------- */
+// Een formulier voor het scheepsprofiel. "Opslaan" maakt een nieuw simulatorbestand met de gegevens erin.
+const STATUSSEN = ["gecontroleerd","besproken","nog controleren","nog invullen"];
+const esc = x => String(x ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const nv = x => num(x) !== null ? String(x).replace(".", ",") : "";
+const inp = (id, v, cls="num", ph="") => `<input type="text" inputmode="decimal" class="${cls}" id="${id}" value="${esc(v)}" placeholder="${esc(ph)}">`;
+function dgRow(r={}) { return `<tr><td>${inp("", r.omschrijving||"", "dg_o", "bv. leeg, WD-kanaal")}</td><td>${inp("", nv(r.diepgang), "num dg_d")}</td><td>${inp("", num(r.sygo)!==null ? String(r.sygo) : "", "num dg_s")}</td></tr>`; }
+function planRegel(r) {
+  const v = x => num(x) !== null ? nv(x) : "";
+  const pr = a => Array.isArray(a) ? [v(a[0]), v(a[1])] : ["", ""];
+  return [v(r.diepgang), ...pr(r.T1), ...pr(r.T2), ...pr(r.T3), v(r.ton), ...pr(r.buiten), ...pr(r.binnen)].join("; ");
+}
+function openGegevens() {
+  const pr = PROFIEL, c = pr.capaciteit || {};
+  let h = `<h3 style="margin-top:0">Gegevens invullen</h3>
+    <p class="note" style="font-size:14px">Leeg laten = nog niet bekend. Komma of punt mag allebei. Met <b>Opslaan</b> download je een nieuw simulatorbestand met deze gegevens erin.</p>
+    <div class="row"><span class="lab">Schip</span><input type="text" id="g_schip" value="${esc(pr.schip)}" placeholder="naam van het schip" style="width:280px"></div>
+    <h4>Peilen in het ruim (cm)</h4><table class="data"><tr><th></th><th>Hoogwateralarm</th><th>Max. niveau</th><th>Doelpeil</th></tr>`;
+  for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${inp("g_"+t+"_alarm", nv(P(t).alarm))}</td><td>${inp("g_"+t+"_max", nv(P(t).max))}</td><td>${inp("g_"+t+"_doel", nv(P(t).doel))}</td></tr>`;
+  h += `</table>
+    <div class="row"><span class="lab" style="min-width:150px">Zaadhout (cm)</span>${inp("g_zaad", nv(pr.zaadhout_cm))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Lading tijdens meting (t)</span>${inp("g_voor", nv(pr.meting_lading_ton))}</div>
+    <p class="note" style="margin-top:0">Lading die nog aan boord was toen het ballastplan werd gemeten. Die zit in de kolom "ton totaal" van het ballastplan.</p>
+    <div class="row"><span class="lab" style="min-width:150px">U-tank inhoud (t)</span>${inp("g_ut", nv(pr.utank_ton))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Helling per 100 t (°)</span>${inp("g_hel", nv(pr.helling_graden_per_100t))}</div>
+    <p class="note" style="margin-top:0">Uit een proef: pomp 100 t meer aan één kant en lees de hellingmeter af. Leeg = de simulator toont alleen het verschil in ton.</p>
+    <h4>Tanktabellen (cm → ton)</h4><p class="note" style="margin-top:0">Eén punt per regel: peil in cm en ton, gescheiden door een puntkomma of tab. Je kunt de twee kolommen ook rechtstreeks uit Excel plakken.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${["T1","T2","T3"].map(t => `<label style="font-size:14px">${TKNAAM[t]}<textarea id="g_tab_${t}" rows="9" style="width:100%;font:13px monospace">${((pr.tanktabel||{})[t]||[]).map(r => nv(r[0]) + "; " + nv(r[1])).join("\n")}</textarea></label>`).join("")}</div>
+    <h4>Ballastplan per diepgang</h4><p class="note" style="margin-top:0">Eén diepgang per regel, kolommen gescheiden door puntkomma of tab (plakken uit Excel kan):<br><code>diepgang; R1 BB; R1 SB; R2 BB; R2 SB; R3 BB; R3 SB; ton totaal; inz. buiten; trim buiten; inz. binnen; trim binnen</code>. Leeg vak = geen ballast / niet gemeten.</p>
+    <textarea id="g_plan" rows="9" style="width:100%;font:13px monospace">${(pr.ballastplan||[]).map(planRegel).join("\n")}</textarea>
+    <h4>Diepgang en Sygo-stand</h4><table class="data"><thead><tr><th>Omschrijving</th><th>Diepgang (m)</th><th>Sygo-stand (mt)</th></tr></thead><tbody id="g_dg">${(pr.diepgang||[]).map(dgRow).join("") || dgRow()}</tbody></table>
+    <button type="button" id="g_dgAdd" style="margin-top:6px">Regel toevoegen</button>
+    <h4>Capaciteit (optioneel)</h4>
+    <div class="row"><span class="lab" style="min-width:150px">Ballastpomp (m³/h)</span>${inp("g_pomp", nv(c.pomp_m3h))}</div>
+    <div class="row"><span class="lab" style="min-width:150px">Ejector (m³/h)</span>${inp("g_ejector", nv(c.ejector_m3h))}</div>
+    <p class="note">Zijn beide capaciteiten ingevuld, dan rekent de simulator met echte tijden.</p>
+    <h4>Afsluiternamen</h4><p class="note" style="margin-top:0">Alleen invullen als de afsluiter aan boord anders heet.</p>
+    <table class="data"><tr><th>Nr</th><th>Standaardnaam</th><th>Naam aan boord</th></tr>`;
+  for (const v of Object.values(VALVES)) h += `<tr><td>${v.nr}</td><td>${esc(STANDAARDNAMEN[v.id])}</td><td><input type="text" class="g_naam" data-id="${v.id}" value="${esc((pr.namen||{})[v.id]||"")}" placeholder="zelfde als standaard"></td></tr>`;
+  h += `</table><h4>Controlestatus</h4><table class="data"><tr><th>Onderdeel</th><th>Status</th><th>Wanneer</th><th>Opmerking</th></tr>`;
+  (pr.controle||[]).forEach((k,i) => h += `<tr><td>${esc(k.onderdeel)}</td><td><select class="g_st" data-i="${i}">${STATUSSEN.map(s => `<option${s===k.status?" selected":""}>${s}</option>`).join("")}</select></td><td><input type="text" class="g_wn" data-i="${i}" value="${esc(k.wanneer)}" style="width:100px"></td><td><input type="text" class="g_opm" data-i="${i}" value="${esc(k.opm)}"></td></tr>`);
+  h += `</table><div class="melding" id="g_msg"></div>
+    <div class="knoppen"><button type="button" onclick="this.closest('dialog').close()">Annuleren</button><button type="button" class="on" id="g_save">Opslaan als nieuw bestand</button></div>`;
+  document.getElementById("gegBody").innerHTML = h;
+  document.getElementById("g_dgAdd").onclick = () => document.getElementById("g_dg").insertAdjacentHTML("beforeend", dgRow());
+  document.getElementById("g_save").onclick = saveGegevens;
+  document.getElementById("dlgGegevens").showModal();
+}
+function collectGegevens() {
+  const fouten = [];
+  const rd = (e, wat) => {
+    const s = e.value.trim().replace(",", ".");
+    e.classList.remove("fout");
+    if (!s) return null;
+    const v = Number(s);
+    if (!isFinite(v) || v < 0) { e.classList.add("fout"); fouten.push(`${wat}: "${e.value}" is geen getal`); return null; }
+    return v;
+  };
+  const $ = id => document.getElementById(id);
+  const p = JSON.parse(JSON.stringify(PROFIEL));
+  p.schip = $("g_schip").value.trim();
+  p.peil = {};
+  for (const t of TK) {
+    const r = { alarm: rd($("g_"+t+"_alarm"), TKNAAM[t]+" alarm"), max: rd($("g_"+t+"_max"), TKNAAM[t]+" max."), doel: rd($("g_"+t+"_doel"), TKNAAM[t]+" doelpeil") };
+    if (r.max !== null && r.alarm !== null && r.alarm > r.max) { $("g_"+t+"_alarm").classList.add("fout"); fouten.push(`${TKNAAM[t]}: alarm ligt boven het max. niveau`); }
+    if (r.max !== null && r.doel !== null && r.doel > r.max) { $("g_"+t+"_doel").classList.add("fout"); fouten.push(`${TKNAAM[t]}: doelpeil ligt boven het max. niveau`); }
+    p.peil[t] = r;
+  }
+  delete p.volume;
+  p.zaadhout_cm = rd($("g_zaad"), "zaadhout"); p.meting_lading_ton = rd($("g_voor"), "lading tijdens meting"); delete p.voorlading_ton; p.utank_ton = rd($("g_ut"), "U-tank inhoud"); p.helling_graden_per_100t = rd($("g_hel"), "helling per 100 t");
+  const getal = (x, wat, mag0) => { x = (x||"").trim().replace(",", "."); if (!x) return null; const v = Number(x); if (!isFinite(v)) { fouten.push(`${wat}: "${x}" is geen getal`); return null; } return v; };
+  const regels = id => $(id).value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => l.split(/\t|;/).map(c => c.trim()));
+  p.tanktabel = {};
+  for (const t of ["T1","T2","T3"]) {
+    const a = regels("g_tab_"+t).map((c,k) => [getal(c[0], `${TKNAAM[t]} regel ${k+1}`), getal(c[1], `${TKNAAM[t]} regel ${k+1}`)]).filter(r => r[0] !== null && r[1] !== null).sort((x,y) => x[0]-y[0]);
+    for (let k = 1; k < a.length; k++) if (a[k][1] <= a[k-1][1] || a[k][0] === a[k-1][0]) fouten.push(`${TKNAAM[t]}: tonnen moeten oplopen met het peil (rond ${a[k][0]} cm)`);
+    $("g_tab_"+t).classList.toggle("fout", fouten.some(f => f.startsWith(TKNAAM[t])));
+    p.tanktabel[t] = a;
+  }
+  p.ballastplan = regels("g_plan").map((c,k) => {
+    const g = n => getal(c[n], `ballastplan regel ${k+1}`), paar = (a,b) => (g(a) === null && g(b) === null) ? null : [g(a), g(b)];
+    return { diepgang: g(0), T1: paar(1,2), T2: paar(3,4), T3: paar(5,6), ton: g(7), buiten: paar(8,9), binnen: paar(10,11) };
+  }).filter(r => r.diepgang !== null).sort((a,b) => a.diepgang - b.diepgang);
+  p.diepgang = [...$("g_dg").rows].map(tr => ({
+    omschrijving: tr.querySelector(".dg_o").value.trim(),
+    diepgang: rd(tr.querySelector(".dg_d"), "diepgang"),
+    sygo: rd(tr.querySelector(".dg_s"), "Sygo-stand"),
+  })).filter(r => r.omschrijving || r.diepgang !== null || r.sygo !== null);
+  if (!p.diepgang.length) p.diepgang = [{ omschrijving: "", diepgang: null, sygo: null }];
+  p.capaciteit = { pomp_m3h: rd($("g_pomp"), "pompcapaciteit"), ejector_m3h: rd($("g_ejector"), "ejectorcapaciteit") };
+  p.namen = {};
+  document.querySelectorAll("#gegBody .g_naam").forEach(e => { const v = e.value.trim(); if (v && v !== STANDAARDNAMEN[e.dataset.id]) p.namen[e.dataset.id] = v; });
+  document.querySelectorAll("#gegBody .g_st").forEach(e => p.controle[+e.dataset.i].status = e.value);
+  document.querySelectorAll("#gegBody .g_wn").forEach(e => p.controle[+e.dataset.i].wanneer = e.value.trim());
+  document.querySelectorAll("#gegBody .g_opm").forEach(e => p.controle[+e.dataset.i].opm = e.value.trim());
+  return { p, fouten };
+}
+function profielJs(p) {
+  // Schrijft het profiel terug in dezelfde, leesbare vorm als bovenin dit bestand.
+  const js = x => x === null || x === undefined ? "null" : (typeof x === "number" ? String(x) : JSON.stringify(x).replace(/</g, "\\u003c"));
+  const ar = a => Array.isArray(a) ? `[${a.map(js).join(", ")}]` : "null";
+  const pad = (s, n) => s + " ".repeat(Math.max(1, n - s.length));
+  const L = [];
+  L.push("const PROFIEL = {");
+  L.push(`  ${pad("schip: " + js(p.schip) + ",", 33)}// naam van het schip, bv. "MTS Voorbeeld"`);
+  L.push(`  versie: ${js(p.versie)},`, "");
+  L.push("  // Peilen in het ruim in centimeter. alarm = hoogwateralarm, max = maximaal niveau, doel = standaard doelpeil bij ballast in.", "  peil: {");
+  for (const t of ["T3","T2","T1","UT"]) L.push(`    ${pad(`${t}: { alarm: ${js(p.peil[t].alarm)}, max: ${js(p.peil[t].max)}, doel: ${js(p.peil[t].doel)} },`, 50)}// ${t==="UT" ? "U-tank (ballastruimte rond de methanoltank)" : TKNAAM[t]}`);
+  L.push("  },");
+  L.push(`  ${pad("zaadhout_cm: " + js(p.zaadhout_cm) + ",", 33)}// hoogte zaadhout in de ruimen`);
+  L.push(`  ${pad("meting_lading_ton: " + js(p.meting_lading_ton) + ",", 33)}// lading die nog aan boord was tijdens de metingen van het ballastplan (zit in "ton")`);
+  L.push(`  ${pad("utank_ton: " + js(p.utank_ton) + ",", 33)}// inhoud U-tank in ton bij max. niveau`);
+  L.push(`  ${pad("helling_graden_per_100t: " + js(p.helling_graden_per_100t) + ",", 33)}// slagzij: gemeten helling (graden) bij 100 t meer aan één kant (uit een proef)`, "");
+  L.push("  // Tanktabellen: peil in het ruim (cm) -> ton ballastwater. Tussenliggende waarden worden lineair geïnterpoleerd.", "  tanktabel: {");
+  for (const t of ["T1","T2","T3"]) L.push(`    ${t}: [${((p.tanktabel||{})[t]||[]).map(ar).join(", ")}],`);
+  L.push("  },", "", "  // Ballastplan per diepgang. Peilen in cm als [BB, SB]; ton = ballast + lading aan boord tijdens de meting;", "  // buiten/binnen = gemeten gemiddelde inzinking (cm) en trim (cm, achter min voor) als [inzinking, trim].", "  ballastplan: [");
+  for (const r of p.ballastplan || []) L.push(`    { diepgang: ${js(r.diepgang)}, T1: ${ar(r.T1)}, T2: ${ar(r.T2)}, T3: ${ar(r.T3)}, ton: ${js(r.ton)}, buiten: ${ar(r.buiten)}, binnen: ${ar(r.binnen)} },`);
+  L.push("  ],", "", "  // Diepgang en Sygo-stand (uit het tabellenboek). Voeg zo veel regels toe als nodig.", "  diepgang: [");
+  for (const r of p.diepgang) L.push(`    { omschrijving: ${js(r.omschrijving)}, diepgang: ${js(r.diepgang)}, sygo: ${js(r.sygo)} },`);
+  L.push("  ],", "", "  // Optioneel: met de capaciteit rekent de simulator met echte tijden (1 m³ water ≈ 1 ton).");
+  L.push(`  capaciteit: { pomp_m3h: ${js(p.capaciteit.pomp_m3h)}, ejector_m3h: ${js(p.capaciteit.ejector_m3h)} },`, "");
+  L.push("  // Afwijkende afsluiternamen (sleutel = code uit de lijst STANDAARDNAMEN hieronder).", "  namen: {");
+  for (const k in p.namen) L.push(`    ${k}: ${js(p.namen[k])},`);
+  L.push("  },", "", "  // Controlestatus per onderdeel (eigen administratie).", "  // status: \"gecontroleerd\", \"besproken\", \"nog controleren\" of \"nog invullen\".", "  controle: [");
+  for (const k of p.controle) L.push(`    { onderdeel: ${js(k.onderdeel)}, status: ${js(k.status)}, wanneer: ${js(k.wanneer)}, opm: ${js(k.opm)} },`);
+  L.push("  ],", "};");
+  return "\n" + L.join("\n") + "\n";
+}
+function bouwHtml(p) {
+  const open = '<script id="profiel">', i = BRON_HTML.indexOf(open), j = BRON_HTML.indexOf("</" + "script>", i);
+  return BRON_HTML.slice(0, i + open.length) + profielJs(p) + BRON_HTML.slice(j);
+}
+function saveGegevens() {
+  const { p, fouten } = collectGegevens(), msg = document.getElementById("g_msg");
+  if (fouten.length) { msg.innerHTML = `<span style="color:var(--red)">Niet opgeslagen: ${fouten.map(esc).join("; ")}.</span>`; return; }
+  const naamBestand = "ballast_simulator" + (p.schip ? "_" + p.schip.replace(/[^\w-]+/g, "_") : "") + ".html";
+  const url = URL.createObjectURL(new Blob([bouwHtml(p)], { type: "text/html" }));
+  const a = document.createElement("a"); a.href = url; a.download = naamBestand;
+  document.body.appendChild(a); a.click(); a.remove();
+  msg.innerHTML = `<b>Opgeslagen als ${esc(naamBestand)}</b> (meestal in de map Downloads).<br>
+    Vervang het oude simulatorbestand door dit nieuwe en open het: dan zijn simulator en afdrukbladen bijgewerkt.
+    Dit scherm blijft nog de oude gegevens tonen.`;
+}
+document.getElementById("btnGegevens").onclick = openGegevens;
+
+
+/* ---------------- afdrukken ---------------- */
+let saved = null;
+function preparePrint(kind) {
+  if (!saved) saved = { valves: Object.fromEntries(Object.values(VALVES).map(v => [v.id, v.open])), pumps: Object.fromEntries(Object.values(PUMPS).map(p => [p.id, p.on])), scenario, title: window.TITLE.textContent };
+  printKind = kind;
+  const t = computeTarget(kind === "controle" ? "rust" : kind);
+  for (const v of stripValves()) if (!(v in t)) t[v] = 0;   // strips op het blad: dicht, alleen voor restjes
+  applyState(t);
+  window.TITLE.textContent = {in:"Ballast in", uit:"Ontballasten", rust:"Ruststand", controle:"Controleblad"}[kind];
+  window.SUBTITLE.textContent = kind === "rust" || kind === "controle" ? "S-serie" : `${taskTanks().map(x => x==="UT" ? "U-tank" : x[1]).join(" + ")} · pomp ${task.pomp}`;
+  svg.classList.add("printing"); document.body.classList.add("printing");
+  const pd = document.getElementById("printdoc"); pd.innerHTML = printDoc(kind, t); pd.classList.toggle("compact", kind === "controle");
+  render();
+}
+function endPrint() {
+  if (!saved) return;
+  for (const id in saved.valves) VALVES[id].open = saved.valves[id];
+  for (const id in saved.pumps) PUMPS[id].on = saved.pumps[id];
+  window.TITLE.textContent = saved.title; window.SUBTITLE.textContent = "interactieve versie";
+  saved = null; printKind = null;
+  svg.classList.remove("printing"); document.body.classList.remove("printing");
+}
+const vak = v => num(v)!==null ? fmt(v) + " m" : '<span class="vak">&nbsp;</span>';
+const vakcm = v => num(v)!==null ? v + " cm" : '<span class="vak">&nbsp;</span>';
+function peilTabel() {
+  let h = `<table><tr><th></th><th>Hoogwateralarm</th><th>Max. niveau</th><th>Doelpeil</th></tr>`;
+  for (const t of TK) h += `<tr><td>${TKNAAM[t]}</td><td>${vakcm(P(t).alarm)}</td><td>${vakcm(P(t).max)}</td><td>${vakcm(P(t).doel)}</td></tr>`;
+  h += `</table><p>Zaadhout: ${vakcm(PROFIEL.zaadhout_cm)}  &nbsp;&nbsp; U-tank inhoud: ${num(PROFIEL.utank_ton)!==null ? PROFIEL.utank_ton+" t" : '<span class="vak">&nbsp;</span> t'}</p><table>`;
+  h += `<tr><th>Omschrijving</th><th>Diepgang</th><th>Sygo-stand</th></tr>`;
+  const rows = (PROFIEL.diepgang||[]).filter(r => r.omschrijving || num(r.diepgang)!==null);
+  for (const r of rows) h += `<tr><td>${r.omschrijving||""}</td><td>${vak(r.diepgang)}</td><td>${num(r.sygo)!==null ? r.sygo+" mt" : '<span class="vak">&nbsp;</span>'}</td></tr>`;
+  for (let i = rows.length; i < 3; i++) h += `<tr><td>&nbsp;</td><td></td><td></td></tr>`;
+  const c = PROFIEL.capaciteit||{};
+  h += `</table><p>Pompcapaciteit: ${num(c.pomp_m3h)!==null ? c.pomp_m3h+" m³/h" : '<span class="vak">&nbsp;</span> m³/h'} &nbsp;&nbsp; Ejector: ${num(c.ejector_m3h)!==null ? c.ejector_m3h+" m³/h" : '<span class="vak">&nbsp;</span> m³/h'}</p>`;
+  return h;
+}
+function printDoc(kind, t) {
+  const kop = `Ballastsysteem S-serie${PROFIEL.schip ? " – " + PROFIEL.schip : ""}`;
+  const voet = `<p class="klein">Versie ${PROFIEL.versie}. Aan boord geldt altijd de boordinstructie.</p>`;
+  if (kind === "controle") {
+    let h = `<h1>Controleblad – ${kop}</h1><p>Loop elke afsluiter na (nummer = nummer op blad 1). Vink aan of de plek klopt en schrijf de naam op zoals hij aan boord heet, als die anders is.</p>`;
+    h += `<table><tr><th>Nr</th><th>Afsluiter in de simulator</th><th>Plek klopt</th><th>Naam aan boord (als anders)</th><th>Opmerking</th></tr>`;
+    for (const v of Object.values(VALVES)) h += `<tr><td>${v.nr}</td><td>${naam(v.id)}</td><td>☐ ja &nbsp; ☐ nee</td><td style="width:70mm"></td><td style="width:70mm"></td></tr>`;
+    h += `</table><h2>Open vragen</h2><ol>
+      <li>U-tank: is het één leiding voor vullen én zuigen? Maat (DN): ______ &nbsp; Drainleiding aanwezig? ☐ ja ☐ nee – waar / welke afsluiter: ____________________</li>
+      <li>Buitenboord: heeft elke machinekamer één buitenboordafsluiter voor de ballastpomp? ☐ ja ☐ nee – naam aan boord: ____________________</li>
+      <li>DN-maten: Pers ballast achter ______ · voor DN150? ______ · drijfwater DN125? ______ · overboord DN200? ______ · zuigmonden DN100? ______ · strips DN50? ______</li>
+      <li>Stripleidingen: BB voor en SB achter in elk ruim? ☐ ja ☐ nee – opmerking: ____________________</li>
+      <li>Ontbreekt er iets op het schema (afsluiter, leiding, peilbuis)? ________________________________________</li>
+    </ol><h2>Scheepsgegevens</h2>${peilTabel()}
+    <p style="margin-top:6mm">Gecontroleerd door: <span class="vak" style="min-width:60mm">&nbsp;</span> &nbsp; Datum: <span class="vak">&nbsp;</span> &nbsp; Schip: <span class="vak" style="min-width:50mm">&nbsp;</span></p>${voet}`;
+    return h;
+  }
+  const titel = {in:"Ballast in", uit:"Ontballasten", rust:"Ruststand"}[kind];
+  let rows = "";
+  for (const v of Object.values(VALVES)) {
+    let st = t[v.id] ? '<span class="open">OPEN</span>' : '<span class="dicht">DICHT</span>', opm = "";
+    if (v.id.startsWith("str")) opm = "alleen voor restjes";
+    if (v.id.startsWith("bu_")) opm = "altijd open (brandblus stand-by)";
+    if (v.id === "d23" || v.id === "d12") opm = "routekeuze, zie rechts";
+    rows += `<tr><td>${v.nr}</td><td>${naam(v.id)}</td><td>${st}</td><td class="klein">${opm}</td></tr>`;
+  }
+  let h = `<h1>${titel} – ${kop}</h1>`;
+  if (kind !== "rust") h += `<p>Getekend voor: <b>${lijst(taskTanks().map(x => TKNAAM[x]))}</b>, pomp <b>${task.pomp}</b>.</p>`;
+  h += `<div class="cols"><div><h2>Standen van de afsluiters</h2><table><tr><th>Nr</th><th>Afsluiter</th><th>Stand</th><th>Opmerking</th></tr>${rows}</table></div><div>`;
+  if (kind !== "rust") {
+    const saveSc = scenario; scenario = kind; const st = buildSteps(); scenario = saveSc;
+    h += `<h2>Volgorde</h2><ol>${st.map(s => `<li>${s.t}</li>`).join("")}</ol>`;
+  } else h += `<h2>Ruststand</h2><p>Na elke klus: pompen uit, alle afsluiters dicht. Alleen de buitenboordafsluiters blijven open, zodat het brandbluswater stand-by blijft.</p>`;
+  h += `<h2>Deelafsluiters: routekeuze</h2><table><tr><th>Pomp</th><th>Ruimen</th><th>${naam("d23")}</th><th>${naam("d12")}</th></tr>
+    <tr><td>Achter</td><td>alleen ruim 3 / U-tank</td><td class="dicht">dicht</td><td class="dicht">dicht</td></tr>
+    <tr><td>Achter</td><td>tot en met ruim 2</td><td class="open">open</td><td class="dicht">dicht</td></tr>
+    <tr><td>Achter</td><td>tot en met ruim 1</td><td class="open">open</td><td class="open">open</td></tr>
+    <tr><td>Voor</td><td>alleen ruim 1</td><td class="dicht">dicht</td><td class="dicht">dicht</td></tr>
+    <tr><td>Voor</td><td>tot en met ruim 2</td><td class="dicht">dicht</td><td class="open">open</td></tr>
+    <tr><td>Voor</td><td>tot en met ruim 3 / U-tank</td><td class="open">open</td><td class="open">open</td></tr>
+    <tr><td>Beide</td><td>alle ruimen</td><td class="open">open</td><td class="open">open</td></tr></table>
+    <h2>Scheepsgegevens</h2>${peilTabel()}</div></div>${voet}`;
+  if ((kind === "in" || kind === "uit") && (PROFIEL.ballastplan?.length || TK.some(tabel))) h += planBlad(kop, voet);
+  return h;
+}
+function planBlad(kop, voet) {
+  // Blad 3: ballastplan per diepgang en de tanktabellen per 10 cm.
+  const c = x => num(x) !== null ? fmt(x, Number.isInteger(x) ? 0 : 1) : "";
+  const pr = a => Array.isArray(a) ? `${c(a[0])} / ${c(a[1])}` : "–";
+  let h = `<div style="break-before:page"><h1>Ballastplan en tanktabellen – ${kop}</h1><div class="cols"><div>
+    <h2>Ballastplan per diepgang</h2><table><tr><th rowspan="2">Diepgang</th><th colspan="3">Peil in ruim, BB / SB (cm)</th><th rowspan="2">Ballast (t)</th><th colspan="2">Gemeten buiten</th><th colspan="2">Gemeten binnen</th></tr>
+    <tr><th>Ruim 1</th><th>Ruim 2</th><th>Ruim 3</th><th>inz.</th><th>trim</th><th>inz.</th><th>trim</th></tr>`;
+  for (const r of PROFIEL.ballastplan || []) h += `<tr><td><b>${fmt(r.diepgang)} m</b></td><td>${pr(r.T1)}</td><td>${pr(r.T2)}</td><td>${pr(r.T3)}</td><td>${c(planBallast(r) !== null ? Math.round(planBallast(r)*10)/10 : null)}</td><td>${r.buiten ? c(Math.round(r.buiten[0]*10)/10) : "–"}</td><td>${r.buiten ? c(r.buiten[1]) : "–"}</td><td>${r.binnen ? c(Math.round(r.binnen[0]*10)/10) : "–"}</td><td>${r.binnen ? c(r.binnen[1]) : "–"}</td></tr>`;
+  h += `</table><p class="klein">${metingLading() ? `Gemeten met nog ${fmt(metingLading(),1)} t lading aan boord; die zit niet in de kolom Ballast, wel in de gemeten diepgang. ` : ""}Inzinking in cm (gemiddelde van BB en SB, voor, midden en achter); trim = achter min voor, in cm (plus = achter dieper).</p>
+    <h2>Rekenvoorbeeld</h2><p>Ruim 2 op 77 cm: tussen 75 cm (${c(tonAt("T2",75))} t) en 80 cm (${c(tonAt("T2",80))} t) liggen ${c((tonAt("T2",80)-tonAt("T2",75))/5)} t per cm. 77 cm = ${c(tonAt("T2",75))} + 2 × ${c((tonAt("T2",80)-tonAt("T2",75))/5)} = <b>${c(tonAt("T2",77))} t</b>.</p>
+    </div><div><h2>Tanktabellen (ton per peil)</h2><table><tr><th>Peil (cm)</th>${["T1","T2","T3"].map(t => `<th>${TKNAAM[t]}</th>`).join("")}</tr>`;
+  const punten = t => new Set(((PROFIEL.tanktabel||{})[t]||[]).map(r => r[0]));
+  const laatste = t => Math.max(...((PROFIEL.tanktabel||{})[t]||[[0]]).map(r => r[0]));
+  for (let cm = 10; cm <= 250; cm += 10) h += `<tr><td><b>${cm}</b></td>${["T1","T2","T3"].map(t => { const v = tonAt(t, cm); if (v === null) return "<td></td>"; const st = punten(t).has(cm) ? "font-weight:bold" : (cm > laatste(t) ? "color:#999;font-style:italic" : ""); return `<td style="${st}">${fmt(v,1)}</td>`; }).join("")}</tr>`;
+  h += `</table><p class="klein"><b>Vet</b> = waarde uit de tanktabel. Gewoon = lineair geïnterpoleerd tussen twee tabelwaarden. <i style="color:#999">Grijs</i> = doorgetrokken boven de hoogste tabelwaarde, onzeker.</p></div></div>${voet}</div>`;
+  return h;
+}
+document.getElementById("btnPrint").onclick = () => { preparePrint(document.getElementById("printKind").value); setTimeout(() => window.print(), 50); };
+window.addEventListener("afterprint", endPrint);
+window.preparePrint = preparePrint; window.endPrint = endPrint;
+
+setScenario("vrij");
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

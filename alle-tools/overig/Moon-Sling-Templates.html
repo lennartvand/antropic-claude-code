@@ -1,0 +1,854 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Moon Sling Templates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f7f3ee; --linen:#ede7dc; --moon:#3d2e25; --gold:#b8976a;
+  --stone:#c4b9aa; --taupe:#8a7d6e; --ink:#2c2520; --rust:#c4704a;
+  --sage:#7a8c72; --dusk:#6b7fa0; --blush:#d4a89a; --border:#ddd5c8;
+  --surface:#ffffff; --surface-2:var(--linen);
+  --bg:var(--cream); --text:var(--ink); --text-dim:var(--taupe);
+  --accent:var(--gold); --danger:#a8443a;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#221a15; --surface:#2c221b; --surface-2:#332821;
+    --text:#f0e9df; --text-dim:#c3b3a2; --border:#4a3c30;
+    --cream:#2c221b; --linen:#332821; --moon:#f0e9df;
+    --gold:#d4b483; --stone:#8a7a68; --taupe:#c3b3a2; --ink:#f0e9df;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#221a15; --surface:#2c221b; --surface-2:#332821;
+  --text:#f0e9df; --text-dim:#c3b3a2; --border:#4a3c30;
+  --cream:#2c221b; --linen:#332821; --moon:#f0e9df;
+  --gold:#d4b483; --stone:#8a7a68; --taupe:#c3b3a2; --ink:#f0e9df;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:"Jost",sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;}
+::selection{background:var(--gold);color:var(--moon);}
+
+/* ===== HEADER ===== */
+header{background:#161009;color:var(--cream);padding:56px 48px 44px;position:relative;overflow:hidden;--h-fg:#f7f3ee;--h-fg-dim:#c4b9aa;}
+header::before{content:"☽";position:absolute;right:36px;top:6px;font-size:200px;opacity:.05;line-height:1;pointer-events:none;color:var(--h-fg);}
+.h-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;font-weight:500;}
+header h1{font-family:"Cormorant Garamond",serif;font-size:clamp(30px,4.2vw,52px);font-weight:300;line-height:1.06;color:var(--h-fg,#f7f3ee);letter-spacing:-.01em;}
+header h1 em{font-style:italic;color:var(--gold);}
+header p.lede{color:var(--h-fg-dim,#c4b9aa);font-size:14px;max-width:600px;margin-top:14px;line-height:1.75;}
+.h-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px;}
+.h-pill{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:100px;padding:6px 14px;font-size:11px;color:var(--h-fg-dim,#c4b9aa);letter-spacing:.04em;}
+.theme-toggle{position:absolute;top:20px;right:20px;z-index:5;display:flex;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:3px;}
+.theme-btn{background:none;border:none;color:var(--h-fg-dim,#c4b9aa);font-family:"Jost",sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-radius:100px;cursor:pointer;}
+.theme-btn.on{background:var(--gold);color:var(--moon);}
+
+/* ===== NAV ===== */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:50;}
+nav::-webkit-scrollbar{display:none;}
+.nav-btn{padding:15px 16px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:500;color:var(--text-dim);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;font-family:"Jost",sans-serif;transition:color .15s,border-color .15s;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.on{color:var(--moon,var(--text));border-bottom-color:var(--gold);}
+:root[data-theme="dark"] .nav-btn.on, :root:not([data-theme="light"]) .nav-btn.on{color:var(--gold);}
+
+main{max-width:1140px;margin:0 auto;padding:48px 28px 90px;}
+.section{display:none;}
+.section.on{display:block;animation:fadeUp .3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.sec-eyebrow{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:500;}
+.sec-title{font-family:"Cormorant Garamond",serif;font-size:clamp(26px,3.4vw,38px);font-weight:300;margin-bottom:10px;line-height:1.12;text-wrap:balance;}
+.sec-intro{color:var(--text-dim);font-size:14.5px;max-width:680px;line-height:1.8;margin-bottom:36px;}
+
+/* ===== PRIORITY LIST (overview) ===== */
+.priority-list{display:flex;flex-direction:column;gap:0;margin-bottom:44px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);}
+.priority-row{display:grid;grid-template-columns:64px 1fr auto;gap:18px;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);}
+.priority-row:last-child{border-bottom:none;}
+.priority-num{font-family:"Cormorant Garamond",serif;font-size:32px;font-weight:300;color:var(--gold);line-height:1;}
+.priority-body h4{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:17px;margin-bottom:3px;}
+.priority-body p{font-size:12.5px;color:var(--text-dim);line-height:1.55;max-width:560px;}
+.priority-tag{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;padding:5px 11px;border-radius:100px;font-weight:600;white-space:nowrap;}
+.tag-high{background:rgba(184,151,106,.18);color:var(--gold);}
+.tag-mid{background:rgba(122,140,114,.18);color:var(--sage);}
+.tag-low{background:rgba(196,185,170,.2);color:var(--text-dim);}
+
+.bucket-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:40px;}
+.bucket-chip{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:100px;background:var(--surface);border:1px solid var(--border);font-size:11.5px;}
+.bucket-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.b-a{background:var(--dusk);} .b-b{background:var(--rust);} .b-c{background:var(--sage);} .b-d{background:var(--gold);}
+
+/* ===== CORRECTIONS BANNER ===== */
+.corrections{background:var(--surface-2);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:20px 24px;margin-bottom:8px;}
+.corrections h4{font-family:"Cormorant Garamond",serif;font-size:16px;font-weight:500;margin-bottom:10px;}
+.corrections ul{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.corrections li{font-size:12.5px;color:var(--text-dim);line-height:1.6;padding-left:16px;position:relative;}
+.corrections li::before{content:"—";position:absolute;left:0;color:var(--gold);}
+
+/* ===== CARD GRID (templates) ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:26px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(20,15,10,.14);}
+
+/* mockup */
+.mock{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}
+.mock.ar-1-1{aspect-ratio:1/1;}
+.mock.ar-4-5{aspect-ratio:4/5;}
+.mock.ar-story{aspect-ratio:9/15;}
+.mock.ar-wide{aspect-ratio:4/3;}
+.mock-photobed{position:absolute;inset:0;}
+.mock-ov{position:absolute;inset:0;}
+.ov-dark{background:linear-gradient(to top,rgba(20,10,5,.82) 0%,rgba(20,10,5,.3) 48%,rgba(20,10,5,.05) 100%);}
+.ov-mid{background:linear-gradient(to top,rgba(20,10,5,.65) 0%,rgba(20,10,5,.1) 55%,transparent 100%);}
+.ov-light{background:linear-gradient(to top,rgba(20,10,5,.48) 0%,rgba(20,10,5,.04) 60%,transparent 100%);}
+.ov-linen{background:linear-gradient(to top,rgba(237,231,220,.9) 0%,rgba(237,231,220,.5) 50%,rgba(237,231,220,.08) 100%);}
+.mock-wordmark{position:absolute;top:16px;left:18px;font-size:9px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;z-index:3;}
+.mock-wordmark.light{color:rgba(255,255,255,.78);}
+.mock-wordmark.dark{color:rgba(44,37,32,.62);}
+.mock-crescent{position:absolute;top:13px;right:16px;font-size:24px;opacity:.4;color:var(--gold);z-index:3;}
+.mock-badge{display:inline-block;padding:4px 12px;border-radius:100px;font-size:8.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;width:fit-content;}
+.badge-light{border:1px solid rgba(255,255,255,.38);color:rgba(255,255,255,.9);}
+.badge-dark{border:1px solid rgba(44,37,32,.32);color:rgba(44,37,32,.75);background:rgba(237,231,220,.65);}
+.mock-body{position:relative;z-index:2;padding:18px 20px;}
+.mock-head{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:400;line-height:1.2;margin-bottom:5px;}
+.mock-head.light{color:#fff;} .mock-head.dark{color:var(--moon);}
+.mock-head em{font-style:italic;}
+.mock-sub{font-size:9px;letter-spacing:.06em;}
+.mock-sub.light{color:rgba(255,255,255,.55);} .mock-sub.dark{color:rgba(44,37,32,.5);}
+.mock-dots{position:absolute;top:15px;right:44px;display:flex;gap:3px;z-index:3;}
+.mock-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);}
+.mock-dot.on{background:#fff;}
+.mock-dot.dark{background:rgba(44,37,32,.25);}
+.mock-dot.dark.on{background:var(--moon);}
+.mock-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(to right,var(--gold),transparent);z-index:3;}
+.mock-progress{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:3px;z-index:3;}
+.mock-pbar{flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,.3);}
+.mock-pbar.done{background:rgba(255,255,255,.9);}
+.mock-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.mock-step{display:flex;align-items:center;gap:8px;}
+.mock-stepnum{font-family:"Cormorant Garamond",serif;font-size:20px;color:var(--gold);min-width:22px;line-height:1;}
+.mock-steptxt{font-size:8.5px;color:rgba(255,255,255,.72);line-height:1.4;}
+.mock-quote{background:rgba(237,231,220,.9);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:11px 14px;margin-bottom:8px;}
+.mock-quote-txt{font-family:"Cormorant Garamond",serif;font-size:12.5px;font-style:italic;color:var(--moon);line-height:1.5;}
+.mock-quote-by{font-size:8.5px;color:var(--taupe);margin-top:3px;letter-spacing:.06em;}
+.mock-placeholder{align-items:center;justify-content:center;font-size:11px;color:var(--stone);text-align:center;padding:20px;line-height:1.5;font-style:italic;}
+
+/* card body */
+.card-body{padding:20px 22px 22px;}
+.card-toprow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+.code-badge{font-family:"Jost",sans-serif;font-weight:600;font-size:11px;letter-spacing:.08em;padding:4px 11px;border-radius:6px;background:var(--moon);color:var(--cream);}
+:root[data-theme="dark"] .code-badge, :root:not([data-theme="light"]) .code-badge{background:var(--gold);color:#221a15;}
+.card-format{font-size:10px;color:var(--text-dim);letter-spacing:.03em;}
+.card-name{font-family:"Cormorant Garamond",serif;font-size:23px;font-weight:400;margin-bottom:4px;line-height:1.15;}
+.card-tagline{font-size:12.5px;font-style:italic;color:var(--text-dim);font-family:"Cormorant Garamond",serif;margin-bottom:14px;line-height:1.5;}
+.buckets{display:flex;gap:6px;margin-bottom:14px;}
+.divider{height:1px;background:var(--border);margin:13px 0;}
+.label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--stone);font-weight:600;margin-bottom:7px;}
+.body-text{font-size:12.5px;color:var(--text);line-height:1.65;margin-bottom:12px;}
+.photo-refs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.photo-chip{font-size:10.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--text);}
+.caption-box{background:var(--surface-2);border-left:2px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 13px;margin-bottom:10px;}
+.caption-lang{font-size:8.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--text-dim);margin-bottom:3px;}
+.caption-text{font-family:"Cormorant Garamond",serif;font-size:13px;font-style:italic;color:var(--text);line-height:1.5;}
+.alt-box{font-size:11px;color:var(--text-dim);line-height:1.55;background:var(--surface-2);border-radius:8px;padding:9px 12px;margin-bottom:12px;}
+.alt-box b{color:var(--text);font-weight:500;}
+.theme-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.theme-tag{font-size:10px;color:var(--taupe);}
+.warn{font-size:11.5px;color:var(--danger);background:rgba(168,68,58,.09);border-radius:8px;padding:9px 12px;line-height:1.55;margin-top:8px;}
+
+/* brand kit */
+.swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:14px;margin-bottom:32px;}
+.swatch{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;}
+.swatch-circle{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);}
+.swatch-name{font-size:11px;font-weight:500;}
+.swatch-hex{font-size:9.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+.kv-table{width:100%;border-collapse:collapse;margin-bottom:32px;font-size:12.5px;}
+.kv-table th{text-align:left;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);padding:9px 14px;background:var(--moon);color:var(--cream);}
+:root[data-theme="dark"] .kv-table th, :root:not([data-theme="light"]) .kv-table th{background:var(--surface-2);color:var(--gold);}
+.kv-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;}
+.kv-table tr:nth-child(even) td{background:var(--surface-2);}
+.season-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:32px;}
+.season-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.season-card h5{font-family:"Cormorant Garamond",serif;font-size:16px;font-weight:500;margin-bottom:8px;}
+.season-swatches{display:flex;gap:8px;}
+.mini-dot{width:20px;height:20px;border-radius:50%;border:1px solid var(--border);}
+
+/* content-theme mapping table */
+.map-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:20px;}
+.map-table th{text-align:left;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:10px 14px;background:var(--surface-2);color:var(--text-dim);border-bottom:1px solid var(--border);}
+.map-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55;}
+.map-code{display:inline-block;font-weight:600;font-size:11px;background:var(--moon);color:var(--cream);padding:2px 9px;border-radius:5px;}
+:root[data-theme="dark"] .map-code, :root:not([data-theme="light"]) .map-code{background:var(--gold);color:#221a15;}
+
+/* verification chapter */
+.verify-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+.verify-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:5px 12px;border-radius:100px;margin-bottom:12px;}
+.status-ok{background:rgba(122,140,114,.18);color:var(--sage);}
+.status-fix{background:rgba(196,112,74,.18);color:var(--rust);}
+.verify-card h4{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:500;margin-bottom:10px;}
+.verify-card p{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:8px;}
+.verify-card p.dim{color:var(--text-dim);font-size:12px;}
+
+/* decisions */
+.decision-list{display:flex;flex-direction:column;gap:14px;}
+.decision{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:16px;align-items:flex-start;}
+.decision-num{font-family:"Cormorant Garamond",serif;font-size:28px;color:var(--gold);line-height:1;min-width:32px;}
+.decision p{font-size:13px;line-height:1.65;color:var(--text);}
+.decision p.dim{color:var(--text-dim);font-size:12px;margin-top:4px;}
+
+.raw-note{background:var(--surface);border:1px dashed var(--stone);border-radius:14px;padding:24px 26px;margin-bottom:24px;}
+.raw-note h4{font-family:"Cormorant Garamond",serif;font-size:18px;margin-bottom:10px;}
+.raw-note p{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:10px;}
+.stat-row{display:flex;gap:24px;margin:16px 0;flex-wrap:wrap;}
+.stat{display:flex;flex-direction:column;}
+.stat-num{font-family:"Cormorant Garamond",serif;font-size:26px;color:var(--gold);font-variant-numeric:tabular-nums;}
+.stat-label{font-size:10.5px;color:var(--text-dim);letter-spacing:.04em;}
+
+footer{padding:30px 40px 50px;text-align:center;color:var(--text-dim);font-size:11px;letter-spacing:.03em;}
+
+@media(max-width:640px){
+  header{padding:40px 24px 32px;}
+  nav{padding:0 16px;}
+  main{padding:32px 16px 70px;}
+  .grid{grid-template-columns:1fr;}
+}
+</style>
+
+<header>
+  <div class="theme-toggle">
+    <button class="theme-btn" data-t="light" onclick="setTheme('light')">Light</button>
+    <button class="theme-btn" data-t="dark" onclick="setTheme('dark')">Dark</button>
+  </div>
+  <div class="h-eyebrow">Moon Sling · Content Template System · v1.0</div>
+  <h1>Twelve templates,<br><em>one visual language.</em></h1>
+  <p class="lede">Het definitieve templatesysteem, visueel — voor wie het rechtstreeks in Canva gaat bouwen. Elke code heeft een mockup, foto-suggesties, kant-en-klare captions en de exacte specs.</p>
+  <div class="h-meta">
+    <div class="h-pill">☽ 12 templatecodes</div>
+    <div class="h-pill">Reels · Carrousels · Stories · Feed posts</div>
+    <div class="h-pill">17 september 2026</div>
+    <div class="h-pill">Status: concept, wacht op akkoord</div>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn on" onclick="show('overview',this)">Overzicht</button>
+  <button class="nav-btn" onclick="show('reels',this)">Reels</button>
+  <button class="nav-btn" onclick="show('carrousels',this)">Carrousels</button>
+  <button class="nav-btn" onclick="show('stories',this)">Stories</button>
+  <button class="nav-btn" onclick="show('feedposts',this)">Feed posts</button>
+  <button class="nav-btn" onclick="show('brandkit',this)">Brand Kit</button>
+  <button class="nav-btn" onclick="show('themes',this)">Content Themes</button>
+  <button class="nav-btn" onclick="show('rauw',this)">Rauwe post</button>
+  <button class="nav-btn" onclick="show('verify',this)">Verificatie</button>
+  <button class="nav-btn" onclick="show('beslissen',this)">Nog te beslissen</button>
+</nav>
+
+<main>
+
+<!-- ===== OVERVIEW ===== -->
+<div id="overview" class="section on">
+  <div class="sec-eyebrow">Hoe dit systeem werkt</div>
+  <div class="sec-title">Vier formaten, twaalf codes, één prioriteit</div>
+  <p class="sec-intro">Gebaseerd op het structuuronderzoek van de marketing-strateeg (Socialinsider 2026-benchmark, 35 miljoen posts). De volgorde hieronder bepaalt tijdsbesteding — niet gelijk verdelen over de vier formaten.</p>
+
+  <div class="priority-list">
+    <div class="priority-row">
+      <div class="priority-num">01</div>
+      <div class="priority-body"><h4>Carrousels</h4><p>Beste engagement/saves, goedkoopst te vullen met bestaand beeld, enige format met "tweede leven" (24-48u herweergave bij goed swipende posts).</p></div>
+      <div class="priority-tag tag-high">Hoogste prioriteit</div>
+    </div>
+    <div class="priority-row">
+      <div class="priority-num">02</div>
+      <div class="priority-body"><h4>Reels</h4><p>Noodzakelijk voor bereik — enige format met substantieel niet-volgers-bereik (55%). Haalbaar met Ken Burns/pan-zoom over bestaand beeld.</p></div>
+      <div class="priority-tag tag-mid">Noodzakelijk</div>
+    </div>
+    <div class="priority-row">
+      <div class="priority-num">03</div>
+      <div class="priority-body"><h4>Stories</h4><p>Lage moeite, hoge frequentie mogelijk. Bouwt de band met bestaande klanten, geen nieuw beeld nodig.</p></div>
+      <div class="priority-tag tag-mid">Lage moeite</div>
+    </div>
+    <div class="priority-row">
+      <div class="priority-num">04</div>
+      <div class="priority-body"><h4>Losse feed posts</h4><p>Enige format dat structureel achteruitgaat op alle metrics (bereik −22%, interacties −25%, engagement −46% jaar-op-jaar). Alleen grid-continuïteit en snelle aankondigingen.</p></div>
+      <div class="priority-tag tag-low">Bewust minimaal</div>
+    </div>
+  </div>
+
+  <div class="label">Bucket-legenda — elke template hoort bij een of twee doelen</div>
+  <div class="bucket-legend">
+    <div class="bucket-chip"><span class="bucket-dot b-a"></span>A — Zichtbaarheid (nieuw bereik)</div>
+    <div class="bucket-chip"><span class="bucket-dot b-b"></span>B — Volgersgroei</div>
+    <div class="bucket-chip"><span class="bucket-dot b-c"></span>C — Vertrouwen (bestaande volgers)</div>
+    <div class="bucket-chip"><span class="bucket-dot b-d"></span>D — Conversie</div>
+  </div>
+
+  <div class="corrections">
+    <h4>Belangrijke correcties t.o.v. de oude bronnen</h4>
+    <ul>
+      <li>Geen "100% linen"-claims meer — zie Brand Kit, materiaal-sectie.</li>
+      <li>Hashtagbeleid volledig vervangen — het oude "20-25 hashtags in eerste comment"-advies is per 16 sep 2026 afgeschaft. Instagram: geen hashtags, wel verplichte alt-tekst. TikTok: precies 3 vaste hashtags.</li>
+      <li>Weeknummers uit de oude kalendertelling zijn verwijderd — alleen frequentie wordt genoemd.</li>
+      <li>Twee ongeverifieerde cijfers ("43% minder huilen", "€680 voor 4 dragers") zijn gemarkeerd — zie tab Verificatie.</li>
+      <li>Content die als losse statische post was opgezet (Emotion, Urban, Moon Experience, Seasonal) is verplaatst naar hoger scorende formats — vooral CARROUSEL-C en REEL-A/B.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== REELS ===== -->
+<div id="reels" class="section">
+  <div class="sec-eyebrow">Format 2 van de prioriteit</div>
+  <div class="sec-title">Reels — bereik, opgebouwd uit bestaand beeld</div>
+  <p class="sec-intro">Ken Burns pan/zoom over bestaande foto's. Geen nieuwe opnames nodig. Hook in de eerste 1-3 seconden bepaalt het bereik.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="mock ar-story ov-dark" style="background:linear-gradient(150deg,#2c1f1a,#4a3128 55%,#6b4535);">
+        <div class="mock-ov ov-dark"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-crescent">☽</div>
+        <div class="mock-body">
+          <div class="mock-badge badge-light">Emotion</div>
+          <div class="mock-head light">Er is geen<br><em>betere plek.</em></div>
+          <div class="mock-sub light">@moon.sling · moonsling.co</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">REEL-A</span><span class="card-format">9:16 · 8–12 sec</span></div>
+        <div class="card-name">Voor/na of transformatie</div>
+        <div class="card-tagline">"Ken Burns tussen twee bestaande foto's — geen voice-over nodig."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-a"></span>A</span><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Pan/zoom tussen 2 bestaande foto's (rustig moment → geborgen in de sling). Tekst-op-beeld direct bij seconde 0-1 als hook. Rustige trending of originele audio, ondertitels blijven leesbaar.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#01 — bloemenwinkel, donker, baby kijkt in lens</span>
+          <span class="photo-chip">#02 — close-up, mama kust baby</span>
+          <span class="photo-chip">#10/#11 — als tweede foto in transformatie</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption NL</div><div class="caption-text">"Er is geen betere plek. Heart to heart, vanaf het allereerste moment. ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption EN</div><div class="caption-text">"There is no better place. Heart to heart, from the very first moment. ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst:</b> Moeder kust baby in donkere linnen ring sling, warm licht, close-up.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Emotion · Shared experiences about parenthood</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-story ov-mid" style="background:linear-gradient(155deg,#3d3226,#5c4a38 60%,#7a5c42);">
+        <div class="mock-ov ov-mid"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-crescent">☽</div>
+        <div class="mock-body">
+          <div class="mock-steps">
+            <div class="mock-step"><div class="mock-stepnum">01</div><div class="mock-steptxt">Rijg de staart door<br>beide ringen</div></div>
+          </div>
+          <div class="mock-head light" style="font-size:16px">Grootste fout bij<br><em>de eerste keer.</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">REEL-B</span><span class="card-format">9:16 · 15–21 sec</span></div>
+        <div class="card-name">Tip/mythe-ontkrachting</div>
+        <div class="card-tagline">"3-4 foto's, elk gekoppeld aan een tip of misvatting."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-a"></span>A</span><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Ken Burns per foto, elk met een tekstregel (tip/misvatting). Hook bij sec 0-1. Voice-over optioneel. CTA in de laatste 2 seconden. Tekst 5-10 woorden/sec leessnelheid bij TikTok-hergebruik.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#06 — park, voeden</span>
+          <span class="photo-chip">#03 — industrieel close-up, afsluiter</span>
+          <span class="photo-chip">#04/#05/#08 — urban, per tip</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption NL</div><div class="caption-text">"De grootste fout bij een eerste keer dragen — en hoe je die voorkomt. ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption EN</div><div class="caption-text">"First time wearing your Moon Sling? We've got you. Save this guide. ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst:</b> Stap-voor-stap uitleg van het aantrekken van een linnen ring sling, tekst-overlay met instructie.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: How to's · Education · Information on product benefits</span></div>
+        <div class="warn">⚠ Compliance-check verplicht bij elke veiligheids- of materiaalclaim.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-story ov-light" style="background:linear-gradient(160deg,#8a5a3b,#b8976a 55%,#d4a89a);">
+        <div class="mock-ov ov-light"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-crescent">☽</div>
+        <div class="mock-body">
+          <div class="mock-badge badge-light" style="border-color:rgba(184,151,106,.6)">Honey</div>
+          <div class="mock-head light">Welke kleur<br><em>past bij jou?</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">REEL-C</span><span class="card-format">9:16 · 10–15 sec</span></div>
+        <div class="card-name">Kleuren-showcase</div>
+        <div class="card-tagline">"Snelle opeenvolging van productfoto's per kleur."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">2-3 sec per foto, pan/zoom, tekst-overlay met kleurnaam, opbouwend ritme op muziek. CTA in het laatste frame ("shop via link in bio"). Seizoenspalet kan de kleurvolgorde sturen.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#04/#05/#08 — beige, olijfgroen, honey</span>
+          <span class="photo-chip">#10/#11/#13 — zwart, sage, blush</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption NL</div><div class="caption-text">"Welke kleur past bij jouw stijl? Swipe/kijk mee. ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption EN</div><div class="caption-text">"Every color tells its own story. Which one is yours? ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst:</b> Reeks productfoto's van linnen ring slings in verschillende kleuren: zwart, salie, olijfgroen, blush.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Beauty · Brand experience</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== CARROUSELS ===== -->
+<div id="carrousels" class="section">
+  <div class="sec-eyebrow">Format 1 van de prioriteit</div>
+  <div class="sec-title">Carrousels — hoogste prioriteit, meeste tijd</div>
+  <p class="sec-intro">Beste engagement/saves van alle vier formaten, en het enige met een "tweede leven" (24-48u herweergave). Vult zich goedkoop met bestaand beeld.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="mock ar-wide" style="background:linear-gradient(140deg,#2a3a2e,#3a5040 60%,#4a6450);">
+        <div class="mock-ov ov-dark"></div>
+        <div class="mock-bar"></div>
+        <div class="mock-dots"><div class="mock-dot on"></div><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-dot"></div></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-body">
+          <div class="mock-steps">
+            <div class="mock-step"><div class="mock-stepnum">01</div><div class="mock-steptxt">Rijg de staart door<br>beide ringen</div></div>
+            <div class="mock-step" style="opacity:.45"><div class="mock-stepnum" style="color:rgba(184,151,106,.4)">02</div><div class="mock-steptxt">Terug door de<br>onderste ring</div></div>
+          </div>
+          <div class="mock-head light" style="font-size:15px">Je eerste keer.<br><em>Stap voor stap.</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">CARROUSEL-A</span><span class="card-format">1:1 · 6–8 slides</span></div>
+        <div class="card-name">Probleem → oplossing</div>
+        <div class="card-tagline">"Genummerde stappen — letterlijke match met How to's."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-a"></span>A</span><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Slide 1: frustratie/vraag als hook. Slides 2-6: opbouw/genummerde stappen. Slide 7: de sling als oplossing. Slide 8: CTA (bewaren/delen/shoppen).</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#06 — park, voeden (cover)</span>
+          <span class="photo-chip">#03 — industrieel close-up (afsluiter)</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption NL</div><div class="caption-text">"Eerste keer je Moon Sling om? We staan voor je klaar. Bewaar deze gids. ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption EN</div><div class="caption-text">"First time wearing your Moon Sling? We've got you. Save this guide. ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst (slide 1):</b> Titelslide "Je eerste keer dragen, stap voor stap", achtergrondfoto moeder met baby in park.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: How to's · Practical usage benefits · Brand experience</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-wide" style="background:linear-gradient(140deg,#f7f3ee,#ede4d4 60%,#e0d0ba);">
+        <div class="mock-ov ov-linen"></div>
+        <div class="mock-bar"></div>
+        <div class="mock-dots"><div class="mock-dot dark on"></div><div class="mock-dot dark"></div><div class="mock-dot dark"></div><div class="mock-dot dark"></div></div>
+        <div class="mock-wordmark dark">MOON SLING</div>
+        <div class="mock-body">
+          <div class="mock-badge badge-dark">Moon Hack · #05</div>
+          <div class="mock-head dark" style="font-size:17px">De staart is ook<br><em>een voedingsdoek.</em></div>
+          <div class="mock-sub dark">Wist je dat? · Swipe →</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">CARROUSEL-B</span><span class="card-format">1:1 · B1: feiten · B2: hacks</span></div>
+        <div class="card-name">Mythes vs. feiten / Moon Hack</div>
+        <div class="card-tagline">"Twee subvarianten — 17 sep uit elkaar getrokken op verzoek."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text"><b>B1 — Mythes vs. feiten:</b> elke slide = 1 mythe + 1 feit (veiligheid, materiaal, vergelijkingen). Zwaarste compliance-gevoeligheid.<br><b>B2 — Moon Hack-onthulling:</b> "did-you-know"-format, 1 verrassend gebruiksfeitje per slide. Lichter, speelser.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">B1: #03 — materiaalfeit-illustratie</span>
+          <span class="photo-chip">B2: #15 — sluimerende baby, cover</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption B2 · NL</div><div class="caption-text">"3 dingen die je Moon Sling kan die niemand je vertelde. Swipe → ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption B2 · EN</div><div class="caption-text">"3 things your Moon Sling can do that nobody told you. Swipe → ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst B2:</b> Titelslide "Moon Hack #05", close-up slapende baby in roze linnen ring sling.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Education, Information on product benefits (B1) · Hacks (B2)</span></div>
+        <div class="warn">⚠ Compliance-check verplicht vóór publicatie van B1 — zie Verificatie-tab voor twee openstaande claims.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-wide" style="background:linear-gradient(150deg,#6b4535,#b8976a 55%,#d4a89a);">
+        <div class="mock-ov ov-mid"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-crescent">☽</div>
+        <div class="mock-body">
+          <div class="mock-quote">
+            <div class="mock-quote-txt">"Dit is wat dragen is.<br>Puur, ongefilterd geluk."</div>
+          </div>
+          <div class="mock-sub light">☽ moonsling.co</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">CARROUSEL-C</span><span class="card-format">1:1 · afwisselend foto/tekst</span></div>
+        <div class="card-name">Kleuren / quote-mix</div>
+        <div class="card-tagline">"De belangrijkste 'opvang-code' van de herstructurering."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-b"></span>B</span><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Afwisseling van productfoto's (1 kleur/slide) en tekstslides (quote/tip). Sterkste foto als eerste slide (hook). Laatste slide: CTA link in bio. Vangt vrijwel alle oude losse Emotion/Experience/Seasonal-content op.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#01/#02 — Emotion</span>
+          <span class="photo-chip">#09/#12 — Seasonal</span>
+          <span class="photo-chip">#10/#11/#13/#14 — Moon Experience*</span>
+        </div>
+        <div class="caption-box"><div class="caption-lang">Caption NL</div><div class="caption-text">"Dit is wat dragen is. Puur, ongefilterd geluk. ☽"</div></div>
+        <div class="caption-box"><div class="caption-lang">Caption EN</div><div class="caption-text">"This is what carrying looks like. Pure, unfiltered joy. ☽"</div></div>
+        <div class="alt-box"><b>Alt-tekst:</b> Carrousel afwisselend productfoto's in verschillende kleuren en tekstslides met merkquotes.</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Emotion · Seasonal topics · Shared experiences · Testimonials* · Moon key messaging</span></div>
+        <div class="warn">⚠ *Klantcitaten/-foto's alleen met bevestigde toestemming — zie het toestemmingsproces.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== STORIES ===== -->
+<div id="stories" class="section">
+  <div class="sec-eyebrow">Format 3 van de prioriteit</div>
+  <div class="sec-title">Stories — lage moeite, hoge frequentie</div>
+  <p class="sec-intro">Bereiken bijna uitsluitend bestaande volgers — puur band en warme conversie, geen groeimotor. Geschikt voor bijna dagelijkse inzet.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="mock ar-story" style="background:linear-gradient(160deg,#3a2e1e,#5a4228 55%,#7a5c38);">
+        <div class="mock-ov ov-mid"></div>
+        <div class="mock-progress"><div class="mock-pbar done"></div><div class="mock-pbar done"></div><div class="mock-pbar"></div></div>
+        <div class="mock-wordmark light" style="top:24px">MOON SLING</div>
+        <div class="mock-crescent" style="top:22px">☽</div>
+        <div class="mock-body">
+          <div class="mock-badge badge-light">Poll</div>
+          <div class="mock-head light" style="font-size:19px">Welke kleur<br><em>past bij jou?</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">STORY-A</span><span class="card-format">9:16 · 3 slides</span></div>
+        <div class="card-name">Poll-serie</div>
+        <div class="card-tagline">"Vraag → poll → resultaat + link — aanbevolen combinatie sinds 2026."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Slide 1: vraag-sticker. Slide 2: poll-sticker. Slide 3: resultaat + link-sticker naar shop. 5-10 sec per slide.</p>
+        <div class="label">Foto-suggesties</div>
+        <div class="photo-refs">
+          <span class="photo-chip">#09 — Amsterdamse gracht</span>
+          <span class="photo-chip">#12 — rode deur, baby steekt arm uit</span>
+        </div>
+        <div class="alt-box"><b>Voorbeeld:</b> "Welke kleur past bij jouw stijl?" met pollopties (Stone / Honey / Dusk).</div>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Beauty · Practical usage benefits</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-story" style="background:linear-gradient(160deg,#332821,#4a3c30 60%,#5c4a38);">
+        <div class="mock-ov ov-mid"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-body">
+          <div class="mock-badge badge-light">Sharing Moon's values</div>
+          <div class="mock-head light" style="font-size:18px"><em>"Bewust ouderschap,<br>bewuste materialen."</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">STORY-B</span><span class="card-format">9:16 · 3–5 slides</span></div>
+        <div class="card-name">Achter-de-schermen in tekst</div>
+        <div class="card-tagline">"Nul beeldbehoefte — volledig tekst."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">3-5 tekst-georiënteerde slides (merk-achtergrondkleur + tekst) over merkverhaal/waarden/dagelijkse gang van zaken. Eindigt met vraag-sticker. Goede plek voor een "notes app"-accent (zie Rauwe post-tab).</p>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Sharing Moon's values (primair) · Moon key messaging</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-story mock-placeholder" style="background:var(--surface-2);">
+        <span>Hergebruikt bestaand beeld uit CARROUSEL- of REEL-content — geen apart ontwerp</span>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">STORY-C</span><span class="card-format">9:16 · 1–3 slides</span></div>
+        <div class="card-name">Repost + sticker</div>
+        <div class="card-tagline">"Laagste moeite van alle twaalf templates."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span><span class="bucket-chip"><span class="bucket-dot b-a"></span>A</span></div>
+        <div class="divider"></div>
+        <div class="label">Opbouw</div>
+        <p class="body-text">Hergebruik van een bestaande feed-post of Reel met een countdown-, poll- of quiz-sticker eroverheen. Geschikt voor (bijna) dagelijkse inzet. Lichte extra ontdekking via hashtag-/locatiesticker.</p>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Testimonials (reactie-sticker) · Hacks</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== FEED POSTS ===== -->
+<div id="feedposts" class="section">
+  <div class="sec-eyebrow">Format 4 van de prioriteit</div>
+  <div class="sec-title">Feed posts — bewust minimaal</div>
+  <p class="sec-intro">Enige format dat structureel achteruitgaat op alle metrics. Alleen inzetten voor grid-continuïteit en functionele aankondigingen — nooit als groeistrategie.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="mock ar-1-1" style="background:linear-gradient(150deg,#3d2820,#5c3a2e 60%,#7a5040);">
+        <div class="mock-ov ov-light"></div>
+        <div class="mock-wordmark light">MOON SLING</div>
+        <div class="mock-crescent">☽</div>
+        <div class="mock-body">
+          <div class="mock-quote"><div class="mock-quote-txt">"Hold your little one<br>heart to heart."</div></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">FEEDPOST-A</span><span class="card-format">1:1</span></div>
+        <div class="card-name">Quote/waarde-graphic</div>
+        <div class="card-tagline">"Zelfde ontwerp als CARROUSEL-C's quote-slides, als losstaande post."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span></div>
+        <div class="divider"></div>
+        <p class="body-text">Tekst-only of tekst-over-foto met merkwaarde/moeder-gerichte quote. Bewust spaarzaam inzetten — overweeg bij twijfel eerst CARROUSEL-C.</p>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Moon key messaging (secundair)</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-1-1" style="background:linear-gradient(140deg,#f0ebe4,#e6ddd2 55%,#d8ccbe);">
+        <div class="mock-ov ov-linen"></div>
+        <div class="mock-wordmark dark">MOON SLING</div>
+        <div class="mock-body">
+          <div class="mock-head dark" style="font-size:18px">Nieuwe kleur:<br><em>Dusk.</em></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">FEEDPOST-B</span><span class="card-format">1:1</span></div>
+        <div class="card-name">Aankondiging</div>
+        <div class="card-tagline">"Kort, direct, functioneel — geen groei-verwachting."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-d"></span>D</span></div>
+        <div class="divider"></div>
+        <p class="body-text">Nieuwe kleur, voorraadupdate, sale — met bestaande productfoto en korte headline.</p>
+        <div class="theme-tags"><span class="theme-tag">Content Themes: Information on product benefits</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mock ar-1-1 mock-placeholder" style="background:var(--surface-2);">
+        <span>Incidenteel los productbeeld — puur voor grid-esthetiek</span>
+      </div>
+      <div class="card-body">
+        <div class="card-toprow"><span class="code-badge">FEEDPOST-C</span><span class="card-format">1:1</span></div>
+        <div class="card-name">Grid-continuïteit</div>
+        <div class="card-tagline">"Laagste prioriteit van alle twaalf templates."</div>
+        <div class="buckets"><span class="bucket-chip"><span class="bucket-dot b-c"></span>C</span></div>
+        <div class="divider"></div>
+        <p class="body-text">Uitsluitend om kleurbalans/esthetiek van de grid tussen zwaardere carrousel- en Reel-thumbnails te bewaren. Geen vaste thema-toewijzing.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== BRAND KIT ===== -->
+<div id="brandkit" class="section">
+  <div class="sec-eyebrow">Naslagwerk — staat op zichzelf</div>
+  <div class="sec-title">Brand Kit</div>
+  <p class="sec-intro">Wie een Canva-bestand opent hoeft verder niets anders te raadplegen dan dit hoofdstuk.</p>
+
+  <div class="label">Basispalet</div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-circle" style="background:#f7f3ee"></div><div class="swatch-name">Cream</div><div class="swatch-hex">#f7f3ee</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#ede7dc"></div><div class="swatch-name">Linen</div><div class="swatch-hex">#ede7dc</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#3d2e25"></div><div class="swatch-name">Moon Dark</div><div class="swatch-hex">#3d2e25</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#b8976a"></div><div class="swatch-name">Gold</div><div class="swatch-hex">#b8976a</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#c4b9aa"></div><div class="swatch-name">Stone</div><div class="swatch-hex">#c4b9aa</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#8a7d6e"></div><div class="swatch-name">Taupe</div><div class="swatch-hex">#8a7d6e</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#c4704a"></div><div class="swatch-name">Rust</div><div class="swatch-hex">#c4704a</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#7a8c72"></div><div class="swatch-name">Sage</div><div class="swatch-hex">#7a8c72</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#6b7fa0"></div><div class="swatch-name">Dusk</div><div class="swatch-hex">#6b7fa0</div></div>
+    <div class="swatch"><div class="swatch-circle" style="background:#d4a89a"></div><div class="swatch-name">Blush</div><div class="swatch-hex">#d4a89a</div></div>
+  </div>
+  <p class="body-text" style="max-width:640px;margin-bottom:32px;"><b>Minimaximalisme-principe</b> (bevestigd door designtrend-onderzoek 2026): rustige basis (cream/linen/moon dark) + één of twee gedurfde accentkleuren per beeld. Niet het hele palet tegelijk gebruiken.</p>
+
+  <div class="label">Seizoenspalet</div>
+  <div class="season-grid">
+    <div class="season-card"><h5>Lente · mrt–mei</h5><div class="season-swatches"><div class="mini-dot" style="background:#7a8c72"></div><div class="mini-dot" style="background:#d4a89a"></div></div></div>
+    <div class="season-card"><h5>Zomer · jun–aug</h5><div class="season-swatches"><div class="mini-dot" style="background:#6b7fa0"></div><div class="mini-dot" style="background:#b8976a"></div></div></div>
+    <div class="season-card"><h5>Herfst · sep–nov</h5><div class="season-swatches"><div class="mini-dot" style="background:#c4704a"></div><div class="mini-dot" style="background:#8a7d6e"></div></div></div>
+    <div class="season-card"><h5>Winter · dec–feb</h5><div class="season-swatches"><div class="mini-dot" style="background:#3d2e25"></div><div class="mini-dot" style="background:#f7f3ee;border:1px solid #ddd5c8"></div></div></div>
+  </div>
+
+  <div class="label">Typografie</div>
+  <table class="kv-table">
+    <tr><th>Element</th><th>Font</th><th>Grootte</th></tr>
+    <tr><td>Koppen / headlines</td><td>Cormorant Garamond (300, italic voor quotes)</td><td>36–52px post · 52–72px story</td></tr>
+    <tr><td>Body / captions</td><td>Jost Light (300)</td><td>14–16px, regelafstand 1.7</td></tr>
+    <tr><td>Labels / caps / badges</td><td>Jost Medium (500)</td><td>letter-spacing 0.15–0.25em</td></tr>
+  </table>
+  <p class="body-text" style="max-width:640px;">Tekst-op-beeld ondergrens: 36-48pt, hoogste contrast in de eerste 1-3 sec. TikTok: 5-10 woorden/sec leessnelheid, tekst gecentreerd in het midden-onderste derde deel.</p>
+
+  <div class="divider"></div>
+
+  <div class="label">Vaste design-elementen</div>
+  <table class="kv-table">
+    <tr><th>Element</th><th>Specificatie</th></tr>
+    <tr><td>Maansikkel ☽</td><td>Rechtsboven, subtiel (opacity ~0.35–0.45), altijd aanwezig</td></tr>
+    <tr><td>Woordmerk "MOON SLING"</td><td>Linksboven, Jost 500-600 caps, 9px, semitransparant</td></tr>
+    <tr><td>Gouden accentlijn</td><td>2-3px, boven of links, verloop naar transparant</td></tr>
+    <tr><td>Overlay-varianten</td><td>ov-dark (80%) · ov-mid (65%) · ov-light (50%) · ov-linen (lichte tint)</td></tr>
+  </table>
+
+  <div class="label">Formaten & canvasmaten</div>
+  <table class="kv-table">
+    <tr><th>Format</th><th>Afmeting</th><th>Gebruik</th></tr>
+    <tr><td>Feed post vierkant</td><td>1080 × 1080px</td><td>Standaard post, carrousel — geen zwevende UI over het beeld</td></tr>
+    <tr><td>Feed post portret</td><td>1080 × 1350px (4:5)</td><td>Urban/lifestyle — zelfde, geen zwevende UI</td></tr>
+    <tr><td>Story / Reel-canvas</td><td>1080 × 1920px (9:16)</td><td>Stories, Reel-cover/video</td></tr>
+    <tr><td>Logo-positie</td><td>Linksboven, 16-20px inset</td><td>Altijd, consistent</td></tr>
+  </table>
+
+  <div class="warn" style="margin-bottom:20px;">⚠ <b>Bijgewerkt 18 sep 2026:</b> een eerdere Canva-poging leverde tekst op die achter Instagram/Facebook-UI-elementen verdween. De generieke "150px marge" hieronder is vervangen door exacte, platform-specifieke zones — Stories en Reels hebben elk hun eigen zone. Strikt aanhouden bij elke Story-/Reel-template.</div>
+
+  <div class="label">Stories — exacte veilige zone</div>
+  <table class="kv-table">
+    <tr><th>Zone</th><th>Vermijden</th><th>Reden</th></tr>
+    <tr><td>Boven</td><td>250px</td><td>Profielfoto, gebruikersnaam, tijdstempel</td></tr>
+    <tr><td>Onder</td><td>250px</td><td>Berichtenbalk, verzendknop, link-/swipe-up-sticker</td></tr>
+    <tr><td>Bruikbare zone</td><td colspan="2">± 1080 × 1420px, gecentreerd</td></tr>
+  </table>
+
+  <div class="label">Reels — exacte veilige zone (strenger, twee zones tegelijk)</div>
+  <table class="kv-table">
+    <tr><th>Zone</th><th>Vermijden</th><th>Reden</th></tr>
+    <tr><td>Rechts, onder</td><td>± 400px</td><td>Like/comment/share/save/audio-iconen, verticaal gestapeld</td></tr>
+    <tr><td>Links, onder</td><td>± 270px</td><td>Bijschrift (caption) en audio-vermelding</td></tr>
+    <tr><td>Praktische vuistregel</td><td colspan="2">Houd kritieke tekst in de bovenste twee derde én de middelste 70–80% breedte — niet alleen de onderkant mijden</td></tr>
+    <tr><td>Bruikbare zone</td><td colspan="2">± 1080 × 1300px, gecentreerd, extra marge rechtsonder</td></tr>
+  </table>
+  <p class="body-text" style="max-width:640px;margin-bottom:24px;">Bij twijfel: iets meer marge aanhouden dan strikt genoeg lijkt — exacte iconenpositie varieert licht per Instagram-versie/toestel.</p>
+
+  <div class="warn"><b>Beeldmateriaal — verplicht:</b> gebruik altijd een van de bestaande foto's (de 15 genoemde, of de bredere bibliotheek zodra de Drive-koppeling werkt) — nooit nieuw gegenereerde of stock-achtige beelden. Dit was het vierde probleem bij de eerdere Canva-poging.</div>
+  <div class="warn" style="margin-top:10px;">⚠ <b>Materiaal — verplichte correctie:</b> nooit "100% linen" claimen. Gebruik "linen" zonder percentage, of de exacte samenstelling alleen ná bevestiging door de compliance-adviseur.</div>
+</div>
+
+<!-- ===== CONTENT THEMES MAPPING ===== -->
+<div id="themes" class="section">
+  <div class="sec-eyebrow">Hoofdstuk 4</div>
+  <div class="sec-title">Content Themes → templatecode</div>
+  <p class="sec-intro">De 13 categorieën uit de Content Themes-sheet, toegewezen aan een van de 12 templatecodes.</p>
+
+  <table class="map-table">
+    <tr><th>Content Theme</th><th>Code</th><th>Toelichting</th></tr>
+    <tr><td>Emotion</td><td><span class="map-code">CARROUSEL-C</span> ook REEL-A/B</td><td>Verplaatst van losse post naar carrousel/Reel — was het minst toekomstbestendige format.</td></tr>
+    <tr><td>Brand experience</td><td><span class="map-code">CARROUSEL-A</span> ook REEL-C</td><td>Urban/lifestyle-foto's werken als carrousel-vulling of Reel-achtergrond.</td></tr>
+    <tr><td>Hacks</td><td><span class="map-code">CARROUSEL-B</span></td><td>17 sep losgetrokken van How to's — "did-you-know"-format sluit beter aan bij B's mythe/feit-opbouw.</td></tr>
+    <tr><td>Shared experiences + Testimonials</td><td><span class="map-code">CARROUSEL-C</span> secundair STORY-C</td><td>Quote/foto verplaatst naar carrousel; snelle reposts bij STORY-C. Toestemming altijd verplicht.</td></tr>
+    <tr><td>How to's</td><td><span class="map-code">CARROUSEL-A</span> exclusief</td><td>Genummerde-stappen-opbouw is een letterlijke match. Niet langer gedeeld met Hacks.</td></tr>
+    <tr><td>Education + Info product benefits</td><td><span class="map-code">CARROUSEL-B</span></td><td>Mythes-vs-feiten leent zich het best voor feitelijke content. Compliance-check verplicht.</td></tr>
+    <tr><td>Sharing Moon's values</td><td><span class="map-code">STORY-B</span></td><td>Merkverhaal zonder nieuw beeld — zelf gekozen toewijzing.</td></tr>
+    <tr><td>Moon key messaging</td><td><span class="map-code">CARROUSEL-C</span> secundair FEEDPOST-A</td><td>Korte merkzinnen als quote-slide of spaarzame losse post.</td></tr>
+    <tr><td>Practical usage benefits</td><td><span class="map-code">CARROUSEL-A</span></td><td>Concrete voordelen passen bij de lijst-/probleem-oplossing-opbouw. Zelf gekozen.</td></tr>
+    <tr><td>Beauty</td><td><span class="map-code">REEL-C</span></td><td>Kleuren-showcase laat het product puur visueel zien. Zelf gekozen.</td></tr>
+    <tr><td>Seasonal topics</td><td><span class="map-code">CARROUSEL-C</span> ook REEL-A/B</td><td>Verplaatst van losse seizoenspost naar carrousel/Reel.</td></tr>
+  </table>
+  <div class="alt-box">Vier toewijzingen (Sharing Moon's values, Practical usage benefits, Beauty, Moon key messaging-verdeling) zijn eigen keuzes van de content-maker — geen van de bronnen sprak zich hierover uit. Zie tab "Nog te beslissen".</div>
+</div>
+
+<!-- ===== RAUWE POST ===== -->
+<div id="rauw" class="section">
+  <div class="sec-eyebrow">Hoofdstuk 6 — losse richtlijn, geen eigen code</div>
+  <div class="sec-title">De rauwe/ongepolijste post</div>
+  <p class="sec-intro">Toegepast op ongeveer 1 op de 8-10 posts, ongeacht welke templatecode dat dan is.</p>
+
+  <div class="raw-note">
+    <h4>Waarom dit nu een structurele richtlijn is, niet eenmalig</h4>
+    <p>Het designtrend-onderzoek bevestigt dit als de duidelijkste, breedst onderbouwde trend van 2025/2026. Nu AI-polijsting overal goedkoop is, is "gepolijst" geen onderscheidend signaal meer — rauw/onbewerkt is een vertrouwenssignaal geworden. Voor een klein merk is dit bovendien het goedkoopst te produceren.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">+90%</div><div class="stat-label">DIY-zoekopdrachten (Canva, 260M gebruikers)</div></div>
+      <div class="stat"><div class="stat-num">+527%</div><div class="stat-label">Lo-fi-esthetiek</div></div>
+      <div class="stat"><div class="stat-num">1 op 8–10</div><div class="stat-label">posts, ongeacht templatecode</div></div>
+    </div>
+    <p><b>Wat het concreet betekent:</b> af en toe een post zonder gradient-overlay, zonder wordmark, met spontane telefoonfoto-esthetiek. Een handgeschreven-stijl tekstaccent (geen vervanging van de basistypografie) — goed te combineren met STORY-B. Niet aan één vaste code gekoppeld.</p>
+    <p class="dim">Kanttekening: de aanname dat dit specifiek bij jonge ouders beter werkt dan bij het algemene publiek is een redelijke afleiding, geen apart bewezen claim.</p>
+  </div>
+</div>
+
+<!-- ===== VERIFICATIE ===== -->
+<div id="verify" class="section">
+  <div class="sec-eyebrow">Hoofdstuk 7 — door de analist geverifieerd, compliance-akkoord nog nodig</div>
+  <div class="sec-title">Openstaande verificatiepunten</div>
+  <p class="sec-intro">Twee claims uit de oude Canva-gids zijn nagetrokken door de analist (17 sep 2026). Beide nog niet vrijgegeven voor publicatie.</p>
+
+  <div class="verify-card">
+    <span class="verify-status status-ok">Houdbaar, met bronvermelding</span>
+    <h4>"43% minder huilen"</h4>
+    <p>Echte, traceerbare bron: Hunziker &amp; Barr (1986), <i>Pediatrics</i>, 77(5), 641–648. PMID: 3517799. Peer-reviewed RCT, 99 moeder-baby-paren. Op het hoogtepunt van het normale huilpatroon (6 weken) huilden gedragen baby's 43% minder totaal, 51% minder 's avonds. Het cijfer klopt exact.</p>
+    <p class="dim">Nuance verplicht: gaat over "extra dragen" in algemene zin, niet specifiek een ring sling. Eén studie uit 1986 met relatief kleine steekproef.</p>
+    <p><b>Aanbevolen formulering:</b> "Uit onderzoek (Hunziker &amp; Barr, 1986) blijkt dat baby's die extra werden gedragen op het hoogtepunt van het normale huilpatroon tot 43% minder huilden."</p>
+  </div>
+
+  <div class="verify-card">
+    <span class="verify-status status-fix">Deels achterhaald — cijfer aanpassen</span>
+    <h4>"€400–680 voor 4 dragers"</h4>
+    <p>Actuele NL-prijzen (herfst 2026) liggen deels lager (newborn-wrap €40-90 i.p.v. €80-150; heupdrager €35-130 i.p.v. €80-150), en moderne dragers groeien vaak al mee van 3,2-20kg — een vierde aparte aankoop is vaak niet meer nodig.</p>
+    <p><b>Aanbevolen aanpassing:</b> verlaag naar <b>€250–500</b> (2-3 producten) — nog steeds sterk t.o.v. €89, wel verdedigbaar met actuele prijzen.</p>
+  </div>
+
+  <p class="body-text" style="margin-top:8px;"><b>Eerstvolgende stap:</b> compliance-adviseur laten meekijken op beide herziene claims voordat ze in een echte CARROUSEL-B/B1-post gebruikt worden.</p>
+</div>
+
+<!-- ===== NOG TE BESLISSEN ===== -->
+<div id="beslissen" class="section">
+  <div class="sec-eyebrow">Hoofdstuk 8</div>
+  <div class="sec-title">Nog te beslissen</div>
+  <p class="sec-intro">Dit document geldt nog niet als definitief. Onderstaande punten verdienen een bewuste "ja, akkoord".</p>
+
+  <div class="decision-list">
+    <div class="decision">
+      <div class="decision-num">1</div>
+      <div><p><b>Vier zelfgekozen Content Themes-toewijzingen</b> — Sharing Moon's values → STORY-B, Practical usage benefits → CARROUSEL-A, Beauty → REEL-C, Moon key messaging-verdeling.</p><p class="dim">Geen van de vier bronnen sprak zich hierover uit — logische afleiding, geen onderzochte conclusie.</p></div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">2</div>
+      <div><p><b>Hacks en How to's — opgelost.</b> Op 17 sep 2026 losgetrokken: Hacks → CARROUSEL-B, How to's → CARROUSEL-A exclusief.</p><p class="dim">Verwerkt in dit document.</p></div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">3</div>
+      <div><p><b>De twee BRON NODIG-claims — geverifieerd.</b> Analist heeft beide nagetrokken (zie Verificatie-tab); compliance-akkoord op de formulering staat nog open.</p></div>
+    </div>
+    <div class="decision">
+      <div class="decision-num">4</div>
+      <div><p><b>Klantfoto's/testimonials-toestemming — opgelost.</b> Volledig proces uitgewerkt door de compliance-adviseur (NL + EN), inclusief sjablonen en logboek.</p></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>Moon Sling · Content Template System v1.0 · 17 september 2026 · Concept, klaar om te beoordelen</footer>
+
+<script>
+function show(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+  window.scrollTo({top:document.querySelector('nav').offsetTop-1,behavior:'smooth'});
+}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+  try{ localStorage.setItem('moonsling-theme', t); }catch(e){}
+}
+(function(){
+  try{
+    var saved = localStorage.getItem('moonsling-theme');
+    if(saved){ setTheme(saved); }
+  }catch(e){}
+})();
+</script>
+
+</body></html>

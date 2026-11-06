@@ -1,0 +1,495 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ballastschema S-serie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#EDF1F4; --surface:#FFFFFF; --ink:#17212B; --muted:#566575; --line:#C9D2DB;
+  --pipe:#1E2731; --hull:#3A4754; --water:#1F56D6; --air:#8A97A6;
+  --open:#1B8A4C; --closed:#B3261E; --warn:#A96300; --pump:#E7A11A; --pump-ink:#5B3A00;
+  --methanol:#E1E6EB; --methanol-ink:#B6BFC9; --btn:#E4E9EE; --btn-ink:#17212B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E141A; --surface:#16202A; --ink:#E3EAF1; --muted:#97A6B5; --line:#2B3947;
+    --pipe:#C6D0DA; --hull:#8D9EAF; --water:#5E8EFF; --air:#76849392;
+    --open:#3CC27A; --closed:#FF6B5E; --warn:#F2A33A; --pump:#E7A11A; --pump-ink:#3A2500;
+    --methanol:#1C2732; --methanol-ink:#3A4A5A; --btn:#223040; --btn-ink:#E3EAF1;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E141A; --surface:#16202A; --ink:#E3EAF1; --muted:#97A6B5; --line:#2B3947;
+  --pipe:#C6D0DA; --hull:#8D9EAF; --water:#5E8EFF; --air:#76849392;
+  --open:#3CC27A; --closed:#FF6B5E; --warn:#F2A33A; --pump:#E7A11A; --pump-ink:#3A2500;
+  --methanol:#1C2732; --methanol-ink:#3A4A5A; --btn:#223040; --btn-ink:#E3EAF1;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 "Barlow Semi Condensed","Arial Narrow",Arial,sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding-block:20px 40px;padding-inline:16px;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:30px;font-weight:700;letter-spacing:.01em;text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--muted);max-width:65ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--btn);color:var(--btn-ink);
+  border-radius:6px;padding:9px 14px;cursor:pointer;min-height:44px}
+button:hover{border-color:var(--muted)}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+.clock{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:14px;color:var(--muted);
+  font-variant-numeric:tabular-nums;padding:0 4px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow-x:auto}
+.stage svg{display:block;width:100%;min-width:980px;height:auto}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:10px}
+.card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.pumprow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.pumprow:first-of-type{border-top:0}
+.pumprow strong{font-size:18px}
+.pill{grid-column:1/-1;justify-self:start;font-size:14px;font-weight:600;border-radius:999px;padding:3px 10px;
+  border:1px solid currentColor}
+.pill.off{color:var(--muted)} .pill.ok{color:var(--open)} .pill.warn{color:var(--warn)} .pill.crit{color:var(--closed)}
+.toggle.on{background:var(--open);border-color:var(--open);color:#fff}
+.tanklist{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.tank{display:grid;grid-template-columns:7.5em 1fr 6.5em;gap:10px;align-items:center}
+.gauge{height:10px;border-radius:5px;background:var(--btn);overflow:hidden}
+.gauge i{display:block;height:100%;background:var(--water);transition:width .2s linear}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.msgs{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.msgs li{padding:8px 10px;border-radius:6px;border-left:4px solid var(--warn);background:var(--btn)}
+.msgs li.crit{border-left-color:var(--closed)}
+.msgs li.ok{border-left-color:var(--open)}
+details{border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+.adv{display:grid;gap:10px;margin-top:8px}
+.adv label{display:grid;grid-template-columns:7.5em 1fr 3.5em;gap:10px;align-items:center;font-size:15px}
+.adv input[type=range]{width:100%}
+.adv ul{margin:0;padding-left:18px;color:var(--muted);font-size:15px;max-width:70ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);align-items:center}
+.legend svg{vertical-align:middle}
+/* SVG */
+.hull{fill:none;stroke:var(--hull);stroke-width:2}
+.wall{stroke:var(--hull);stroke-width:1.5}
+.tint{fill:var(--water)}
+.lbl{fill:var(--ink);font-size:15px;font-weight:600}
+.lbl-s{fill:var(--muted);font-size:12px;font-weight:500}
+.lbl-m{fill:var(--muted);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px}
+.gbg{fill:var(--btn)} .gfg{fill:var(--water)}
+.pipe{fill:none;stroke:var(--pipe);stroke-linecap:round;stroke-linejoin:round}
+.flow{fill:none;stroke:var(--water);stroke-linecap:butt;stroke-dasharray:12 10;animation:flow .9s linear infinite}
+.flow.air{stroke:var(--air);stroke-dasharray:3 8;animation-duration:1.4s}
+@keyframes flow{to{stroke-dashoffset:-44}}
+.sym{fill:var(--surface);stroke:var(--pipe);stroke-width:2;stroke-linejoin:round}
+.symfill{fill:var(--pipe)}
+.valve{cursor:pointer}
+.valve .body{stroke-width:2.2;stroke-linejoin:round}
+.valve.open .body{fill:var(--surface);stroke:var(--open)}
+.valve.closed .body{fill:var(--closed);stroke:var(--closed)}
+.valve .stem{stroke:var(--pipe);stroke-width:2;fill:none}
+.valve .hit{fill:transparent}
+.valve:hover .body{filter:brightness(1.15)}
+.methanol{fill:var(--methanol)} .methanol-t{fill:var(--methanol-ink);font-size:44px;font-weight:700}
+.pumpbody{fill:var(--pump);stroke:var(--pump-ink);stroke-width:2}
+.imp{stroke:var(--pump-ink);stroke-width:3;stroke-linecap:round;transform-box:fill-box;transform-origin:center}
+.pump.on .imp{animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pbtn{cursor:pointer}
+.pbtn rect{fill:var(--btn);stroke:var(--line)}
+.pbtn text{fill:var(--btn-ink);font-weight:700;font-size:15px}
+.pbtn.on rect{fill:var(--open);stroke:var(--open)} .pbtn.on text{fill:#fff}
+@media (prefers-reduced-motion: reduce){.flow,.pump.on .imp{animation:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ballastschema S-serie</h1>
+      <p class="sub">Klik op een afsluiter om hem open of dicht te zetten. Zet een pomp aan met de knop bij de pomp. Het water stroomt zoals de stand van de afsluiters het toelaat.</p>
+    </div>
+    <div class="bar">
+      <button id="pTekening" type="button">Opstelling uit de tekening</button>
+      <button id="pBallast" type="button">Voorbeeld: ballasten 1 met voorpomp</button>
+      <button id="pDicht" type="button">Alles dicht, pompen uit</button>
+      <button id="pause" type="button" aria-pressed="false">Pauze</button>
+      <span class="clock" id="clock">00:00</span>
+    </div>
+  </header>
+
+  <div class="stage"><svg id="svg" viewBox="0 0 1600 990" role="img" aria-label="Interactief ballastschema met tanks, afsluiters, ejectors en pompen"></svg></div>
+
+  <div class="legend">
+    <span><svg width="34" height="18"><g transform="translate(17,9)"><polygon points="-12,-7 0,0 -12,7" fill="var(--surface)" stroke="var(--open)" stroke-width="2"/><polygon points="12,-7 0,0 12,7" fill="var(--surface)" stroke="var(--open)" stroke-width="2"/></g></svg>afsluiter open</span>
+    <span><svg width="34" height="18"><g transform="translate(17,9)"><polygon points="-12,-7 0,0 -12,7" fill="var(--closed)" stroke="var(--closed)" stroke-width="2"/><polygon points="12,-7 0,0 12,7" fill="var(--closed)" stroke="var(--closed)" stroke-width="2"/></g></svg>afsluiter dicht</span>
+    <span><svg width="44" height="10"><line x1="2" y1="5" x2="42" y2="5" stroke="var(--water)" stroke-width="5" stroke-dasharray="12 10"/></svg>water stroomt</span>
+    <span><svg width="44" height="10"><line x1="2" y1="5" x2="42" y2="5" stroke="var(--air)" stroke-width="5" stroke-dasharray="3 8"/></svg>zuiger trekt lucht</span>
+  </div>
+
+  <div class="panels">
+    <section class="card" aria-labelledby="hP">
+      <h2 id="hP">Pompen</h2>
+      <div class="pumprow"><strong>Achterpomp</strong><button class="toggle" id="tA" type="button">Zet aan</button><span class="pill off" id="sA">Uit</span></div>
+      <div class="pumprow"><strong>Voorpomp</strong><button class="toggle" id="tF" type="button">Zet aan</button><span class="pill off" id="sF">Uit</span></div>
+    </section>
+
+    <section class="card" aria-labelledby="hT">
+      <h2 id="hT">Tanks</h2>
+      <ul class="tanklist" id="tanklist"></ul>
+      <details id="advd">
+        <summary>Geavanceerd</summary>
+        <div class="adv">
+          <label for="speed">Tempo <input id="speed" type="range" min="0" max="3" step="1" value="1"><span class="num" id="speedv">120×</span></label>
+          <div class="bar">
+            <button id="lvlVol" type="button">Alle tanks vol</button>
+            <button id="lvlHalf" type="button">Alle tanks half</button>
+            <button id="lvlLeeg" type="button">Alle tanks leeg</button>
+          </div>
+          <div id="sliders" class="adv"></div>
+          <ul>
+            <li>De zwarte driehoekjes in de tankleidingen op de tekening lees ik als stroomrichting, niet als terugslagkleppen. Alleen de overboordleidingen hebben een terugslagklep.</li>
+            <li>Ballasten: staat de overboordafsluiter dicht, dan perst de pomp via de ejector terug de hoofdleiding in en zo de tanks in.</li>
+            <li>Een DN100-zuiger trekt lucht onder 8% tankinhoud; dan verliest de ejector zijn vacuüm. De DN50-zuiger stript door tot leeg.</li>
+            <li>Voorbeeldwaarden: pomp en ejector 120 m³/u, zijtanks 110 m³, U-tank 90 m³.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" aria-labelledby="hM">
+      <h2 id="hM">Meldingen</h2>
+      <ul class="msgs" id="msgs"></ul>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("svg");
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e;}
+const L={}; for(const n of ["tint","meth","labels","pipes","flows","syms","valves","pumps"]) L[n]=el("g",{});
+
+/* ---------- model ---------- */
+const TANKS={
+  BB3:{name:"Bakboord 3",cap:110,lvl:77},SB3:{name:"Stuurboord 3",cap:110,lvl:72},
+  U:{name:"U-tank",cap:90,lvl:84},
+  BB2:{name:"Bakboord 2",cap:110,lvl:80},SB2:{name:"Stuurboord 2",cap:110,lvl:75},
+  BB1:{name:"Bakboord 1",cap:110,lvl:66},SB1:{name:"Stuurboord 1",cap:110,lvl:70}
+};
+for(const k in TANKS) TANKS[k].m3=TANKS[k].cap*TANKS[k].lvl/100;
+const pct=k=>100*TANKS[k].m3/TANKS[k].cap;
+const Q=120/3600; // m³ per sim-seconde
+const W={100:4,50:1}; // verhouding doorlaat DN100:DN50
+
+const VALVES={}; const EDGES=[]; const TN={}; // tank-zuignodes
+function valve(id,x,y,o,big,label){VALVES[id]={id,x,y,o,big,label,open:false};}
+function edge(id,a,b,pts,dn,v){EDGES.push({id,a,b,pts,dn,valve:v||null,net:true});}
+const HY=525;
+
+function section(n,M){
+  const bb=`BB${n}`,sb=`SB${n}`;
+  TN[`T_${bb}_50`]={tank:bb,dn:50}; TN[`T_${bb}_100`]={tank:bb,dn:100};
+  TN[`T_${sb}_100`]={tank:sb,dn:100}; TN[`T_${sb}_50`]={tank:sb,dn:50};
+  edge(`e_${bb}_50`,`T_${bb}_50`,`J${n}a`,[[M-75,205],[M-75,360],[M,360]],50,`V_${bb}_50`);
+  edge(`e_${bb}_100`,`T_${bb}_100`,`J${n}b`,[[M-98,470],[M,470]],100,`V_${bb}_100`);
+  edge(`e_${sb}_100`,`T_${sb}_100`,`J${n}c`,[[M-98,580],[M,580]],100,`V_${sb}_100`);
+  edge(`e_${sb}_50`,`T_${sb}_50`,`J${n}d`,[[M-75,845],[M-75,670],[M,670]],50,`V_${sb}_50`);
+  edge(`m${n}1`,`J${n}a`,`J${n}b`,[[M,360],[M,470]],100);
+  edge(`m${n}2`,`J${n}b`,`H${n}`,[[M,470],[M,HY]],100);
+  edge(`m${n}3`,`H${n}`,`J${n}c`,[[M,HY],[M,580]],100);
+  edge(`m${n}4`,`J${n}c`,`J${n}d`,[[M,580],[M,670]],100);
+  valve(`V_${bb}_50`,M-75,290,"v",false,`${TANKS[bb].name}, zuiging DN50`);
+  valve(`V_${bb}_100`,M-52,470,"h",false,`${TANKS[bb].name}, zuiging DN100`);
+  valve(`V_${sb}_100`,M-52,580,"h",false,`${TANKS[sb].name}, zuiging DN100`);
+  valve(`V_${sb}_50`,M-75,760,"v",false,`${TANKS[sb].name}, zuiging DN50`);
+  // zuigmonden
+  el("polygon",{points:`${M-90},180 ${M-60},180 ${M-75},205`,class:"sym"},L.syms);
+  el("polygon",{points:`${M-90},870 ${M-60},870 ${M-75},845`,class:"sym"},L.syms);
+  el("polygon",{points:`${M-122},456 ${M-122},484 ${M-98},470`,class:"sym"},L.syms);
+  el("polygon",{points:`${M-122},566 ${M-122},594 ${M-98},580`,class:"sym"},L.syms);
+  const t1=el("text",{x:M-93,y:461,class:"lbl-s"},L.labels); t1.textContent="DN100";
+  const t2=el("text",{x:M-93,y:603,class:"lbl-s"},L.labels); t2.textContent="DN100";
+  const t3=el("text",{x:M-70,y:240,class:"lbl-s"},L.labels); t3.textContent="DN50";
+  const t4=el("text",{x:M-70,y:820,class:"lbl-s"},L.labels); t4.textContent="DN50";
+}
+const M3=350,M2=790,M1=1160,XA=420,XU=490,XF=1290;
+section(3,M3); section(2,M2); section(1,M1);
+
+// hoofdleiding
+edge("h1","H3","HA",[[M3,HY],[XA,HY]],100);
+edge("h2","HA","HU",[[XA,HY],[XU,HY]],100);
+edge("h3","HU","H2",[[XU,HY],[M2,HY]],100,"V_MID");
+edge("h4","H2","H1",[[M2,HY],[M1,HY]],100,"V_TUS");
+edge("h5","H1","HF",[[M1,HY],[XF,HY]],100);
+valve("V_MID",715,HY,"h",true,"Middenafsluiter hoofdleiding");
+valve("V_TUS",1085,HY,"h",true,"Tussenafsluiter");
+
+// U-tank
+TN.T_U_100={tank:"U",dn:100}; TN.T_U_50={tank:"U",dn:50};
+edge("u0","HU","JU",[[XU,HY],[XU,615]],100);
+edge("e_U_100","JU","T_U_100",[[XU,615],[592,615],[592,642]],100,"V_U_100");
+edge("e_U_50","JU","T_U_50",[[XU,615],[XU,872],[572,872]],50,"V_U_50");
+valve("V_U_100",530,615,"h",false,"U-tank, zuiging DN100 (onder de methanoltank)");
+valve("V_U_50",XU,745,"v",false,"U-tank, zuiging DN50 (stuurboordzijde)");
+el("polygon",{points:"578,642 606,642 592,666",class:"sym"},L.syms);
+el("polygon",{points:"572,858 572,886 596,872",class:"sym"},L.syms);
+
+// ejectors: zuigzijde
+edge("sA","HA","EA",[[XA,HY],[XA,440]],200,"V_S_A");
+edge("sF","HF","EF",[[XF,HY],[XF,600]],200,"V_S_F");
+valve("V_S_A",XA,486,"v",true,"Zuigafsluiter achter-ejector");
+valve("V_S_F",XF,562,"v",true,"Zuigafsluiter voor-ejector");
+valve("V_OB_A",XA,205,"v",true,"Overboordafsluiter achter");
+valve("V_OB_F",XF,852,"v",true,"Overboordafsluiter voor");
+
+// drijfwater en uitlaat (geen deel van het tanknet)
+const AUX={
+  dA:{d:`M120 622 V400 H${M3-12} A12 12 0 0 1 ${M3+12} 400 H392`,w:7},
+  oA:{pts:[[XA,300],[XA,112]],w:7},
+  dF:{pts:[[1413,630],[1318,630]],w:7},
+  oF:{pts:[[XF,740],[XF,940]],w:7}
+};
+
+/* ---------- tekenen ---------- */
+// romp en tanks
+const TR={BB3:[215,150,330,375],SB3:[215,525,330,375],BB2:[655,150,355,375],SB2:[655,525,355,375],BB1:[1010,150,320,375],SB1:[1010,525,320,375]};
+const tint={};
+for(const k in TR){const r=TR[k];tint[k]=[el("rect",{x:r[0],y:r[1],width:r[2],height:r[3],class:"tint"},L.tint)];}
+tint.U=[el("rect",{x:545,y:150,width:110,height:55,class:"tint"},L.tint),el("rect",{x:545,y:845,width:110,height:55,class:"tint"},L.tint)];
+el("rect",{x:545,y:205,width:110,height:640,class:"methanol"},L.meth);
+"METHANOL".split("").forEach((c,i)=>{const t=el("text",{x:600,y:262+i*72,"text-anchor":"middle",class:"methanol-t"},L.meth);t.textContent=c;});
+const ul=el("text",{x:600,y:180,"text-anchor":"middle",class:"lbl-s"},L.meth);ul.textContent="Ballast";
+const ul2=el("text",{x:620,y:877,"text-anchor":"middle",class:"lbl-s"},L.meth);ul2.textContent="Ballast";
+el("polygon",{points:"40,215 215,150 1330,150 1560,525 1330,900 215,900 40,835",class:"hull"},L.tint);
+for(const x of [215,545,655,1010,1330]) el("line",{x1:x,y1:150,x2:x,y2:900,class:"wall"},L.tint);
+el("line",{x1:545,y1:205,x2:655,y2:205,class:"wall"},L.tint);el("line",{x1:545,y1:845,x2:655,y2:845,class:"wall"},L.tint);
+const tx=(x,y,s,c,a)=>{const t=el("text",{x,y,class:c||"lbl","text-anchor":a||"start"},L.labels);t.textContent=s;return t;};
+tx(52,480,"Achterschip");tx(1372,470,"Voorschip");
+tx(XA,92,"overboord ↑","lbl-s","middle");tx(XF,972,"overboord ↓","lbl-s","middle");
+tx(715,556,"middenafsluiter","lbl-s","middle");tx(1085,571,"tussenafsluiter","lbl-s","middle");
+tx(XA+24,232,"DN200","lbl-s");tx(XF+24,820,"DN200","lbl-s");
+tx(545+55,830,"U-tank loopt onder","lbl-s","middle");tx(545+55,812,"de methanoltank door","lbl-s","middle");
+el("circle",{cx:1085,cy:HY,r:28,fill:"none",stroke:"var(--muted)","stroke-dasharray":"5 5"},L.labels);
+
+// tankbadges
+const BADGE={BB3:[225,112,170],BB2:[665,112,200],BB1:[1020,112,200],SB3:[225,912,170],U:[548,912,104],SB2:[665,912,200],SB1:[1020,912,200]};
+const badge={};
+for(const k in BADGE){const [x,y,w]=BADGE[k];
+  const n=el("text",{x,y:y+12,class:"lbl"},L.labels);n.textContent=TANKS[k].name;
+  const p=el("text",{x:x+w,y:y+12,"text-anchor":"end",class:"lbl-m"},L.labels);
+  el("rect",{x,y:y+19,width:w,height:7,rx:3.5,class:"gbg"},L.labels);
+  const f=el("rect",{x,y:y+19,width:0,height:7,rx:3.5,class:"gfg"},L.labels);
+  badge[k]={p,f,w};}
+
+// leidingen
+const ptsD=p=>"M"+p.map(q=>q.join(" ")).join(" L");
+const WD={200:7,100:4.5,50:3};
+for(const e of EDGES){e.base=el("path",{d:ptsD(e.pts),class:"pipe","stroke-width":WD[e.dn]},L.pipes);
+  e.flow=el("path",{d:ptsD(e.pts),class:"flow","stroke-width":WD[e.dn]+1.5,visibility:"hidden"},L.flows);}
+for(const k in AUX){const a=AUX[k];a.dd=a.d||ptsD(a.pts);
+  el("path",{d:a.dd,class:"pipe","stroke-width":a.w},L.pipes);
+  a.flow=el("path",{d:a.dd,class:"flow","stroke-width":a.w+1.5,visibility:"hidden"},L.flows);}
+
+// ejectors en terugslagkleppen
+function ejector(x,y,up,side){ // up: diffuser omhoog
+  const dy=up?-1:1;
+  el("polygon",{points:`${x-7},${y+6*dy} ${x+7},${y+6*dy} ${x+18},${y+110*dy} ${x-18},${y+110*dy}`,class:"sym"},L.syms);
+  const nx=side<0?x-28:x+28;
+  el("polygon",{points:`${nx},${y-18} ${nx},${y+18} ${x+(side<0?-7:7)},${y}`,class:"sym"},L.syms);
+  el("polygon",{points:`${x-12},${y-30*dy} ${x+12},${y-30*dy} ${x},${y-8*dy}`,class:"sym"},L.syms);
+  el("circle",{cx:x,cy:y,r:7,class:"sym"},L.syms);
+}
+ejector(XA,410,true,-1); ejector(XF,630,false,1);
+function check(x,y){el("polygon",{points:`${x-9},${y-12} ${x+9},${y-12} ${x},${y}`,class:"symfill"},L.syms);
+  el("polygon",{points:`${x-9},${y+12} ${x+9},${y+12} ${x},${y}`,class:"sym"},L.syms);}
+check(XA,262); check(XF,795);
+
+// afsluiters
+const vEl={};
+function drawValve(v){
+  const g=el("g",{class:"valve closed",transform:`translate(${v.x},${v.y}) rotate(${v.o==="v"?90:0})`,tabindex:"0",role:"button"},L.valves);
+  const s=v.big?14:11, h=v.big?9:7;
+  el("rect",{x:-22,y:-22,width:44,height:44,class:"hit"},g);
+  if(v.big){el("path",{d:`M0 0 V${-h-8} M-7 ${-h-8} H7 M0 ${-h-15} V${-h-1}`,class:"stem"},g);}
+  else{el("path",{d:`M0 0 V${-h-7} M-6 ${-h-7} H6`,class:"stem"},g);}
+  el("polygon",{points:`${-s},${-h} 0,0 ${-s},${h}`,class:"body"},g);
+  el("polygon",{points:`${s},${-h} 0,0 ${s},${h}`,class:"body"},g);
+  const t=el("title",{},g);
+  const toggle=()=>{v.open=!v.open;paintValve(v);};
+  g.addEventListener("click",toggle);
+  g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();toggle();}});
+  vEl[v.id]={g,t};
+}
+function paintValve(v){const r=vEl[v.id];r.g.setAttribute("class","valve "+(v.open?"open":"closed"));
+  r.t.textContent=`${v.label}: ${v.open?"open":"dicht"} (klik om te ${v.open?"sluiten":"openen"})`;
+  r.g.setAttribute("aria-label",r.t.textContent);}
+for(const id in VALVES){drawValve(VALVES[id]);paintValve(VALVES[id]);}
+
+// pompen
+const PUMPS={A:{name:"Achterpomp",on:false,x:120,y:660,bx:80,by:708,ly:608},F:{name:"Voorpomp",on:false,x:1445,y:630,bx:1405,by:546,ly:690}};
+for(const k in PUMPS){const p=PUMPS[k];
+  p.g=el("g",{class:"pump"},L.pumps);
+  el("rect",{x:p.x-6,y:p.y-44,width:12,height:12,class:"pumpbody"},p.g);
+  el("circle",{cx:p.x,cy:p.y,r:32,class:"pumpbody"},p.g);
+  const imp=el("g",{class:"imp"},p.g);
+  for(let i=0;i<3;i++){const a=i*Math.PI/3;el("line",{x1:p.x-Math.cos(a)*20,y1:p.y-Math.sin(a)*20,x2:p.x+Math.cos(a)*20,y2:p.y+Math.sin(a)*20,class:"imp"},imp);}
+  el("circle",{cx:p.x,cy:p.y,r:5,fill:"var(--pump-ink)"},p.g);
+  tx(p.x,p.ly,p.name,"lbl","middle");
+  p.btn=el("g",{class:"pbtn",tabindex:"0",role:"button"},L.pumps);
+  el("rect",{x:p.bx,y:p.by,width:80,height:34,rx:6},p.btn);
+  p.btnT=el("text",{x:p.bx+40,y:p.by+23,"text-anchor":"middle"},p.btn);
+  const tg=()=>setPump(k,!p.on);
+  p.btn.addEventListener("click",tg);
+  p.btn.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();tg();}});
+}
+function setPump(k,on){const p=PUMPS[k];p.on=on;
+  p.g.setAttribute("class","pump"+(on?" on":""));p.btn.setAttribute("class","pbtn"+(on?" on":""));
+  p.btnT.textContent=on?"AAN":"UIT";p.btn.setAttribute("aria-label",`${p.name} ${on?"uitzetten":"aanzetten"}`);
+  const b=document.getElementById("t"+k);b.textContent=on?"Zet uit":"Zet aan";b.classList.toggle("on",on);}
+document.getElementById("tA").onclick=()=>setPump("A",!PUMPS.A.on);
+document.getElementById("tF").onclick=()=>setPump("F",!PUMPS.F.on);
+
+/* ---------- hydraulica ---------- */
+const EJ={A:{port:"EA",sv:"V_S_A",ob:"V_OB_A",drv:"dA",out:"oA",name:"achter-ejector",pump:"Achterpomp"},
+          F:{port:"EF",sv:"V_S_F",ob:"V_OB_F",drv:"dF",out:"oF",name:"voor-ejector",pump:"Voorpomp"}};
+const isOpen=e=>!e.valve||VALVES[e.valve].open;
+
+function compute(){
+  const adj={};
+  for(const e of EDGES) if(isOpen(e)){(adj[e.a]=adj[e.a]||[]).push({e,o:e.b});(adj[e.b]=adj[e.b]||[]).push({e,o:e.a});}
+  const comp={};let cid=0;
+  for(const k in EJ){const s=EJ[k].port;if(comp[s]!=null)continue;const id=cid++;const q=[s];comp[s]=id;
+    while(q.length){const n=q.shift();for(const {o} of adj[n]||[]) if(comp[o]==null){comp[o]=id;q.push(o);}}}
+  const res={delta:{},flows:{},aux:{},st:{},msgs:[]};
+  for(const k in TANKS) res.delta[k]=0;
+  function path(roots,target){ // edges van wortel naar doel
+    const prev={};const q=[...roots];for(const r of roots)prev[r]=null;
+    while(q.length){const n=q.shift();if(n===target)break;for(const {e,o} of adj[n]||[]) if(!(o in prev)){prev[o]={e,from:n};q.push(o);}}
+    if(!(target in prev))return [];const out=[];let n=target;while(prev[n]){out.unshift({e:prev[n].e,from:prev[n].from,to:n});n=prev[n].from;}return out;}
+  function mark(steps,reverse,kind){for(const s of steps){const from=reverse?s.to:s.from;
+    res.flows[s.e.id]={dir:from===s.e.a?1:-1,kind};}}
+  for(const k in EJ){const j=EJ[k];j.on=PUMPS[k].on;j.mode=!j.on?"off":VALVES[j.ob].open?"suck":"push";j.state=null;}
+  const groups={};for(const k in EJ){(groups[comp[EJ[k].port]]=groups[comp[EJ[k].port]]||[]).push(k);}
+  for(const id in groups){
+    const ks=groups[id];
+    const nodes=Object.keys(comp).filter(n=>comp[n]==id);
+    const tnodes=nodes.filter(n=>TN[n]);
+    const suck=ks.filter(k=>EJ[k].mode==="suck"),push=ks.filter(k=>EJ[k].mode==="push");
+    const sPorts=suck.map(k=>EJ[k].port),pPorts=push.map(k=>EJ[k].port);
+    let sCap=suck.length*Q,pCap=push.length*Q;
+    // lucht
+    let air=[];
+    if(sCap>pCap){air=tnodes.filter(n=>{const t=TN[n],l=pct(t.tank);return (t.dn===100&&l<8)||(t.dn===50&&l<0.5);});
+      if(air.length){sCap*=0.15;for(const n of air)mark(path(sPorts,n),true,"air");
+        for(const k of suck){EJ[k].state="air";}
+        const names=air.map(n=>`${TANKS[TN[n].tank].name} (DN${TN[n].dn})`).join(", ");
+        const ej=suck.map(k=>EJ[k].name).join(" en ");
+        if(air.length===tnodes.length) res.msgs.push({lvl:"warn",t:`De open tanks op de ${ej} zijn leeg: de ejector trekt alleen nog lucht. Sluit de zuigingen en zet de pomp uit.`});
+        else res.msgs.push({lvl:"warn",t:`De ${ej} trekt lucht via ${names}. Het vacuüm valt weg en er komt bijna niets meer uit. Sluit die zuiging en strip verder met de DN50.`});}}
+    // rondpompen
+    if(push.length&&suck.length){for(const p of pPorts)mark(path([sPorts[0]],p),true,"water");
+      res.msgs.push({lvl:"warn",t:`${push.map(k=>EJ[k].pump).join(" en ")} perst water naar de ${suck.map(k=>EJ[k].name).join(" en ")}: een deel van het water loopt rond in plaats van naar of uit de tanks.`});}
+    const net=pCap-sCap;
+    const give=n=>{const t=TN[n],l=pct(t.tank);return t.dn===100?l>=8:l>=0.5;};
+    if(net>1e-9){
+      const c=tnodes.filter(n=>pct(TN[n].tank)<99.95);
+      if(!c.length){for(const k of push){EJ[k].state="dead";}
+        const conn=push.filter(k=>VALVES[EJ[k].sv].open);
+        if(conn.length) res.msgs.push({lvl:"crit",t:tnodes.length?`${push.map(k=>EJ[k].pump).join(" en ")} perst tegen volle tanks. De druk loopt op: zet de pomp uit of open een andere tank.`:`${push.map(k=>EJ[k].pump).join(" en ")} draait dood: de overboordafsluiter is dicht en er is geen open weg naar een tank.`});}
+      else{const tw=c.reduce((s,n)=>s+W[TN[n].dn],0);
+        for(const n of c){res.delta[TN[n].tank]+=net*W[TN[n].dn]/tw;mark(path(pPorts,n),false,"water");}
+        for(const k of push)EJ[k].state="fill";}
+    } else if(net<-1e-9){
+      const c=tnodes.filter(give);
+      if(!c.length){for(const k of suck)if(!EJ[k].state)EJ[k].state=tnodes.length?"empty":"noline";}
+      else{const tw=c.reduce((s,n)=>s+W[TN[n].dn],0);
+        for(const n of c){res.delta[TN[n].tank]-=(-net)*W[TN[n].dn]/tw;mark(path(sPorts,n),true,"water");}
+        for(const k of suck)if(!EJ[k].state)EJ[k].state="drain";}
+    } else if(push.length&&suck.length){for(const k of ks)if(!EJ[k].state)EJ[k].state="circ";}
+  }
+  // drijfwater, uitlaat en status
+  for(const k in EJ){const j=EJ[k];
+    const connected=VALVES[j.sv].open;
+    if(j.mode==="off"){res.st[k]={c:"off",t:"Uit"};continue;}
+    if(j.mode==="suck"){res.aux[j.drv]=true;res.aux[j.out]=true;
+      if(!connected){res.st[k]={c:"warn",t:"Ejector draait, zuigafsluiter dicht: alleen drijfwater overboord"};
+        res.msgs.push({lvl:"warn",t:`De ${j.name} draait, maar de zuigafsluiter is dicht. Alleen het drijfwater gaat overboord.`});continue;}
+      const m={drain:["ok","Ontballast: zuigt via de ejector, overboord"],air:["warn","Trekt lucht: ejector verliest vacuüm"],
+        empty:["warn","Zuigt, maar de open tanks zijn leeg"],noline:["warn","Zuigt, maar er staat geen tank open"],circ:["warn","Zuigt rondgepompt water"]}[j.state||"noline"];
+      res.st[k]={c:m[0],t:m[1]};
+      if(j.state==="noline")res.msgs.push({lvl:"warn",t:`De ${j.name} zuigt, maar er staat geen tankzuiging open op zijn deel van de hoofdleiding.`});
+      if(j.state==="empty")res.msgs.push({lvl:"ok",t:`De tanks op de ${j.name} zijn leeg gestript. Je kunt de pomp uitzetten.`});
+      continue;}
+    // persen
+    if(!connected){res.st[k]={c:"crit",t:"Draait dood: overboord én zuigafsluiter dicht"};
+      res.msgs.push({lvl:"crit",t:`${j.pump} draait dood: overboordafsluiter en zuigafsluiter van de ${j.name} zijn allebei dicht.`});continue;}
+    if(j.state==="dead"){res.st[k]={c:"crit",t:"Draait dood: geen open tank"};continue;}
+    res.aux[j.drv]=true;
+    const m={fill:["ok","Ballast: perst water via de ejector de tanks in"],circ:["warn","Perst naar de andere ejector (rondpompen)"]}[j.state]||["warn","Perst"];
+    res.st[k]={c:m[0],t:m[1]};
+    if(j.state==="fill")mark([{e:EDGES.find(e=>e.id===(k==="A"?"sA":"sF")),from:j.port,to:k==="A"?"HA":"HF"}],false,"water");
+  }
+  if(!res.msgs.length)res.msgs.push({lvl:"ok",t:PUMPS.A.on||PUMPS.F.on?"Geen bijzonderheden.":"Beide pompen staan uit. Zet de afsluiters, en zet daarna een pomp aan."});
+  return res;
+}
+
+/* ---------- weergave ---------- */
+const tl=document.getElementById("tanklist"),sl=document.getElementById("sliders");
+const rowEl={},sliderEl={};
+for(const k of ["BB3","SB3","U","BB2","SB2","BB1","SB1"]){
+  const li=document.createElement("li");li.className="tank";
+  li.innerHTML=`<span>${TANKS[k].name}</span><span class="gauge"><i></i></span><span class="num"></span>`;tl.appendChild(li);
+  rowEl[k]={g:li.querySelector("i"),n:li.querySelector(".num")};
+  const lab=document.createElement("label");lab.htmlFor="lv"+k;
+  lab.innerHTML=`${TANKS[k].name}<input id="lv${k}" type="range" min="0" max="100" step="1"><span class="num"></span>`;sl.appendChild(lab);
+  const inp=lab.querySelector("input");inp.addEventListener("input",()=>{TANKS[k].m3=TANKS[k].cap*inp.value/100;});
+  sliderEl[k]={inp,n:lab.querySelector(".num")};
+}
+let lastMsgs="";
+function render(res){
+  for(const e of EDGES){const f=res.flows[e.id];
+    if(f){const pts=f.dir===1?e.pts:[...e.pts].reverse();e.flow.setAttribute("d",ptsD(pts));
+      e.flow.setAttribute("class","flow"+(f.kind==="air"?" air":""));e.flow.setAttribute("visibility","visible");}
+    else e.flow.setAttribute("visibility","hidden");}
+  for(const k in AUX)AUX[k].flow.setAttribute("visibility",res.aux[k]?"visible":"hidden");
+  for(const k in TANKS){const p=pct(k),d=res.delta[k];const tr=d>1e-7?" ↑":d<-1e-7?" ↓":"";
+    badge[k].p.textContent=`${p.toFixed(0)}%${tr}`;badge[k].f.setAttribute("width",(badge[k].w*p/100).toFixed(1));
+    for(const r of tint[k])r.setAttribute("opacity",(0.05+0.28*p/100).toFixed(3));
+    rowEl[k].g.style.width=p+"%";rowEl[k].n.textContent=`${TANKS[k].m3.toFixed(0)} m³ ${p.toFixed(0)}%${tr}`;
+    if(document.activeElement!==sliderEl[k].inp)sliderEl[k].inp.value=p.toFixed(0);sliderEl[k].n.textContent=p.toFixed(0)+"%";}
+  for(const k in EJ){const s=res.st[k],pl=document.getElementById("s"+k);pl.className="pill "+s.c;pl.textContent=s.t;}
+  const key=res.msgs.map(m=>m.lvl+m.t).join("|");
+  if(key!==lastMsgs){lastMsgs=key;const ml=document.getElementById("msgs");ml.innerHTML="";
+    for(const m of res.msgs){const li=document.createElement("li");li.className=m.lvl;li.textContent=m.t;ml.appendChild(li);}}
+}
+
+/* ---------- presets en lus ---------- */
+function setValves(openIds){for(const id in VALVES){VALVES[id].open=openIds.includes(id);paintValve(VALVES[id]);}}
+function tekening(){
+  setValves(["V_BB3_50","V_BB3_100","V_SB3_100","V_SB3_50","V_U_100","V_U_50","V_MID",
+    "V_BB2_50","V_BB2_100","V_SB2_100","V_SB2_50","V_BB1_50","V_BB1_100","V_SB1_100","V_SB1_50",
+    "V_S_A","V_OB_A","V_S_F","V_OB_F"]);setPump("A",true);setPump("F",true);}
+document.getElementById("pTekening").onclick=tekening;
+document.getElementById("pBallast").onclick=()=>{setValves(["V_S_F","V_BB1_100","V_SB1_100"]);setPump("A",false);setPump("F",true);};
+document.getElementById("pDicht").onclick=()=>{setValves([]);setPump("A",false);setPump("F",false);};
+const setAll=v=>{for(const k in TANKS)TANKS[k].m3=TANKS[k].cap*v/100;};
+document.getElementById("lvlVol").onclick=()=>setAll(100);
+document.getElementById("lvlHalf").onclick=()=>setAll(50);
+document.getElementById("lvlLeeg").onclick=()=>setAll(0);
+const SPEEDS=[30,120,300,600];const sp=document.getElementById("speed"),spv=document.getElementById("speedv");
+sp.oninput=()=>{spv.textContent=SPEEDS[sp.value]+"×";};
+let paused=false;const pb=document.getElementById("pause");
+pb.onclick=()=>{paused=!paused;pb.textContent=paused?"Verder":"Pauze";pb.setAttribute("aria-pressed",paused);};
+let simT=0,last=performance.now();const clock=document.getElementById("clock");
+function frame(now){const dt=Math.min(0.1,(now-last)/1000);last=now;
+  const res=compute();
+  if(!paused){const sdt=dt*SPEEDS[sp.value];simT+=sdt;
+    for(const k in TANKS){TANKS[k].m3=Math.max(0,Math.min(TANKS[k].cap,TANKS[k].m3+res.delta[k]*sdt));}}
+  const m=Math.floor(simT/60);clock.textContent=`sim-tijd ${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
+  render(res);requestAnimationFrame(frame);}
+tekening();requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
